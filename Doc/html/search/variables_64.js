@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['data',['data',['../structdevice__ioctrl__data.html#a99d6274576188aeea8225493378b04ec',1,'device_ioctrl_data']]],
+  ['data_5frw',['data_rw',['../structdevice__rw.html#a4731025369481beeaa5c408775ad2a7e',1,'device_rw']]],
+  ['dev_5fdma_5f64mask',['dev_dma_64mask',['../structpciedev__dev.html#af7e6baa6cd220202c57c57fd6f4c8960',1,'pciedev_dev']]],
+  ['dev_5ffile_5flist',['dev_file_list',['../structpciedev__dev.html#a8ed1dbb1842cc5dac1c4e70ee591563f',1,'pciedev_dev']]],
+  ['dev_5ffile_5fref',['dev_file_ref',['../structpciedev__dev.html#a70dd23e1e4e09f064d5bef3e55f475fb',1,'pciedev_dev']]],
+  ['dev_5fminor',['dev_minor',['../structpciedev__dev.html#af40974d12b3cb4756839bac0f12a4d93',1,'pciedev_dev']]],
+  ['dev_5fmut',['dev_mut',['../structpciedev__dev.html#a71029cd75f21c4574bbfae901fec48f7',1,'pciedev_dev']]],
+  ['dev_5fname',['dev_name',['../structpciedev__dev.html#ab1b83722186d216f09a5a720e5164e90',1,'pciedev_dev']]],
+  ['dev_5fnum',['dev_num',['../structpciedev__dev.html#a3a204fd1eee6f172951fb0182116f200',1,'pciedev_dev']]],
+  ['dev_5fpayload_5fsize',['dev_payload_size',['../structpciedev__dev.html#ac977dad885ba0696370be25e4233e59e',1,'pciedev_dev']]],
+  ['dev_5fstr',['dev_str',['../structpciedev__dev.html#ae5322ae529331c6aeeb37b2766b780f8',1,'pciedev_dev']]],
+  ['dev_5fsts',['dev_sts',['../structpciedev__dev.html#a1e913602320203e4f93018ea16b97445',1,'pciedev_dev']]],
+  ['devfn',['devfn',['../structpciedev__dev.html#ab6f3fabedbac7c70efa91d88e6dc7550',1,'pciedev_dev']]],
+  ['device_5fid',['device_id',['../structpciedev__dev.html#a5323236e310202fa3bd7c8829a5223e6',1,'pciedev_dev']]],
+  ['devnumber',['devNumber',['../structpciedev__dev.html#a857356f652dc59e77c1bbb48e0b2333b',1,'pciedev_dev']]],
+  ['dma_5fcmd',['dma_cmd',['../structdevice__ioctrl__dma.html#a5cce7fa7327b8572fba52bdf18d14b0f',1,'device_ioctrl_dma']]],
+  ['dma_5foffset',['dma_offset',['../structdevice__ioctrl__dma.html#afcf57847c512e334f1a83bd89be950fd',1,'device_ioctrl_dma']]],
+  ['dma_5fpattern',['dma_pattern',['../structdevice__ioctrl__dma.html#a1e19c195c09b5115ca42ca5bf7392bd8',1,'device_ioctrl_dma']]],
+  ['dma_5freserved1',['dma_reserved1',['../structdevice__ioctrl__dma.html#a0b2c5967b28765ba545b56dcb88c2762',1,'device_ioctrl_dma']]],
+  ['dma_5freserved2',['dma_reserved2',['../structdevice__ioctrl__dma.html#a0796ba7e60f5ed15719a885a871101c5',1,'device_ioctrl_dma']]],
+  ['dma_5fsize',['dma_size',['../structdevice__ioctrl__dma.html#a32b3b16303be485dc116787dc4564bdd',1,'device_ioctrl_dma']]]
+];

@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['pcied_5ffpos',['PCIED_FPOS',['../pciedev__ufn_8h.html#af5bd2d5b0d466fc7c6b89e85054df1f9',1,'pciedev_ufn.h']]],
+  ['pciedev_5fdma_5fmin_5fsyze',['PCIEDEV_DMA_MIN_SYZE',['../pciedev__io_8h.html#a6df179f336e65ab5b64801ca0f9818d2',1,'pciedev_io.h']]],
+  ['pciedev_5fdma_5fsyze',['PCIEDEV_DMA_SYZE',['../pciedev__io_8h.html#acf195079e65702428087887dd5649ffc',1,'pciedev_io.h']]],
+  ['pciedev_5fdriver_5fversion',['PCIEDEV_DRIVER_VERSION',['../pciedev__io_8h.html#a2140cdb4612e1aeb483572affbeb9f20',1,'pciedev_io.h']]],
+  ['pciedev_5ffirmware_5fversion',['PCIEDEV_FIRMWARE_VERSION',['../pciedev__io_8h.html#a4209c10c61a2ea367ce7ae1ebaf03ed0',1,'pciedev_io.h']]],
+  ['pciedev_5fget_5fdma_5ftime',['PCIEDEV_GET_DMA_TIME',['../pciedev__io_8h.html#a2aa7940c0614fa9c0c1031e028db6fc0',1,'pciedev_io.h']]],
+  ['pciedev_5fget_5fstatus',['PCIEDEV_GET_STATUS',['../pciedev__io_8h.html#a1192aa141968a35a6df1c3fed3646f14',1,'pciedev_io.h']]],
+  ['pciedev_5fphysical_5fslot',['PCIEDEV_PHYSICAL_SLOT',['../pciedev__io_8h.html#a07aad6c0ab1a1d0386c51904d1d4e481',1,'pciedev_io.h']]],
+  ['pciedev_5fread_5fdma',['PCIEDEV_READ_DMA',['../pciedev__io_8h.html#a0ce58a436c9a78d135964a5b62c0dfd5',1,'pciedev_io.h']]],
+  ['pciedev_5fscratch_5freg',['PCIEDEV_SCRATCH_REG',['../pciedev__io_8h.html#aee76447bc6c66911e0012e7cb33b34ac',1,'pciedev_io.h']]],
+  ['pciedev_5fset_5firq',['PCIEDEV_SET_IRQ',['../pciedev__io_8h.html#affbc21ad44dcfae23526e8fb7b77b16c',1,'pciedev_io.h']]],
+  ['pciedev_5fwrite_5fdma',['PCIEDEV_WRITE_DMA',['../pciedev__io_8h.html#a6892d9a42c85abdf25bf5998359ba61b',1,'pciedev_io.h']]],
+  ['pciedoocs_5fioc',['PCIEDOOCS_IOC',['../pciedev__io_8h.html#ae4a61739d33de556c654b0b2d3458549',1,'pciedev_io.h']]],
+  ['pciedoocs_5fioc_5fdma_5fmaxnr',['PCIEDOOCS_IOC_DMA_MAXNR',['../pciedev__io_8h.html#a80b72af01345fd80ba7df7085fe5271b',1,'pciedev_io.h']]],
+  ['pciedoocs_5fioc_5fdma_5fminnr',['PCIEDOOCS_IOC_DMA_MINNR',['../pciedev__io_8h.html#a3550d7327b976a7882121d4fb3e9e518',1,'pciedev_io.h']]],
+  ['pciedoocs_5fioc_5fmaxnr',['PCIEDOOCS_IOC_MAXNR',['../pciedev__io_8h.html#a2adc22a34dd80aeb9090741dad0bf049',1,'pciedev_io.h']]],
+  ['pciedoocs_5fioc_5fminnr',['PCIEDOOCS_IOC_MINNR',['../pciedev__io_8h.html#aeda3a2a8e04dea1db5bcf4d4cec12688',1,'pciedev_io.h']]]
+];

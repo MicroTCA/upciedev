@@ -1,0 +1,6 @@
+<map id="G" name="G">
+<area shape="rect" id="node2" href="$structpciedev__cdev.html" title="{pciedev_cdev\n|+ UPCIEDEV_VER_MAJ\l+ UPCIEDEV_VER_MIN\l+ PCIEDEV_DRV_VER_MAJ\l+ PCIEDEV_DRV_VER_MIN\l+ PCIEDEV_MAJOR\l+ PCIEDEV_MINOR\l+ pciedev_dev_m\l+ pciedev_class\l+ pciedev_procdir\l+ pciedevModuleNum\l|}" alt="" coords="221,571,419,813"/>
+<area shape="rect" id="node5" href="$structpciedev__brd__info.html" title="{pciedev_brd_info\n|+ PCIEDEV_BOARD_ID\l+ PCIEDEV_BOARD_VERSION\l+ PCIEDEV_BOARD_DATE\l+ PCIEDEV_HW_VERSION\l+ PCIEDEV_BOARD_RESERVED\l+ PCIEDEV_PROJ_NEXT\l|}" alt="" coords="5,6,235,178"/>
+<area shape="rect" id="node7" href="$structupciedev__file__list.html" title="{upciedev_file_list\n|+ node_file_list\l+ filp\l+ file_cnt\l|}" alt="" coords="259,32,381,152"/>
+<area shape="rect" id="node9" href="$structpciedev__prj__info.html" title="{pciedev_prj_info\n|+ prj_list\l+ PCIEDEV_PROJ_ID\l+ PCIEDEV_PROJ_VERSION\l+ PCIEDEV_PROJ_DATE\l+ PCIEDEV_PROJ_RESERVED\l+ PCIEDEV_PROJ_NEXT\l|}" alt="" coords="405,6,624,178"/>
+</map>
