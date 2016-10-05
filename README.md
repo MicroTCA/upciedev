@@ -3,9 +3,5 @@ The basic functionality of the PCI Express device  does not depend on device typ
 Such flexibility will facilitate the tasks of creation and supporting of the device drivers, on the other hand it will lead to the principle ”write for one use for all”  at the level of user programming.
 
 universal PCIe driver, provides the base PCIe functionality to be used by the top level drivers.
-<<<<<<< HEAD
 It is kept adapted for PCI Express HotPlug and Standard Hardware API guidelines of PICMIG.
 
-=======
-test
->>>>>>> develop
