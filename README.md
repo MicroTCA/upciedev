@@ -4,4 +4,3 @@ Such flexibility will facilitate the tasks of creation and supporting of the dev
 
 universal PCIe driver, provides the base PCIe functionality to be used by the top level drivers.
 It is kept adapted for PCI Express HotPlug and Standard Hardware API guidelines of PICMIG.
-
