@@ -227,6 +227,7 @@ int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
 
 //adding mmap staff
+//will add fops function
 
 //int       pciedev_check_scratch(struct pciedev_dev *, int );
 
