@@ -226,6 +226,13 @@ int       pciedev_get_prjinfo(struct pciedev_dev *);
 int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
 
+<<<<<<< HEAD
+=======
+//adding mmap staff
+//will add fops function
+
+//int       pciedev_check_scratch(struct pciedev_dev *, int );
+>>>>>>> ludwig_mmap
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *);
