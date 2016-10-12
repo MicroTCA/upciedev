@@ -226,6 +226,8 @@ int       pciedev_get_prjinfo(struct pciedev_dev *);
 int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
 
+//adding mmap staff
+
 //int       pciedev_check_scratch(struct pciedev_dev *, int );
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
