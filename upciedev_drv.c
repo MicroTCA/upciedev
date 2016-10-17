@@ -32,6 +32,7 @@ static int __init pciedev_init_module(void)
 {
 	int   result  = 0;
 
+	printk(KERN_NOTICE "UPCIEDEV_INIT_MODULE  MMAP VERSION CALLED\n");
 	UociedevTestFunction("UPCIEDEV");
 	printk(KERN_ALERT "UPCIEDEV_INIT:REGISTERING PCI DRIVER sizeof(loff_t)=%d, __USER_CS=0x%x\n", (int)sizeof(loff_t), (int)__USER_CS);
 	return result; /* succeed */

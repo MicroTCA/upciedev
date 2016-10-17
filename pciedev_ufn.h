@@ -32,6 +32,7 @@
 #include <linux/interrupt.h>
 #include <linux/fs.h>	
 #include <linux/proc_fs.h>
+#include <linux/mm.h>
 #include "criticalregionlock.h"
 #include "pciedev_io.h"
 
@@ -227,9 +228,25 @@ int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
 
 //adding mmap staff
-//will add fops function
+/* The mmap system call declared as:
+ *  mmap (caddr_t addr, size_t len, int prot, int flags, int fd, off_t offset)
+ * 
+ * off_t ofset is a long int, in current implementation of the mmap this the BAR number, this means
+ * the BAR will mapped from start (0x0)
+ * could be in future changed to remap BAR from some offset, in this case
+ * the most 4bits of the offset is a BAR num and the rest 60buts is a offset inside BAR 
+ */
 
-//int       pciedev_check_scratch(struct pciedev_dev *, int );
+void upciedev_vma_open(struct vm_area_struct *vma);
+void upciedev_vma_close(struct vm_area_struct *vma);
+static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma);
+static struct vm_operations_struct upciedev_remap_vm_ops = {
+	.open =  upciedev_vma_open,
+	.close = upciedev_vma_close,
+};
+
+// end mmap staff
+
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *);

@@ -17,6 +17,7 @@
 #define		PRW_OFFSET_MASK		(int64_t)0x00ffffffffffffff
 #define		PRW_REG_SIZE_SHIFT	60
 #define		PRW_BAR_SHIFT		56
+#define		MMAP_BAR_SHIFT	12
 
 // Register size
 #define RW_D8                0x0
