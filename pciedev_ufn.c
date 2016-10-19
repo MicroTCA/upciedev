@@ -244,13 +244,17 @@ EXPORT_SYMBOL(pciedev_get_baraddress);
 
 void upciedev_vma_open(struct vm_area_struct *vma)
 {
+/*
 	printk(KERN_NOTICE "UPCIEDEV VMA open, virt %lx, phys %lx\n",
 			vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
+*/
 }
 
 void upciedev_vma_close(struct vm_area_struct *vma)
 {
+/*
 	printk(KERN_NOTICE "UPCIEDEV VMA close.\n");
+*/
 }
 
 static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
@@ -263,37 +267,29 @@ static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	
 	struct pciedev_dev       *dev  = filp->private_data;
 	
-	printk(KERN_INFO "PCIEDEV_MMAP:  start %X ; STOP %X; PGOFFSET %X \n",
-               vma->vm_start, vma->vm_end, vma->vm_pgoff);
+	//printk(KERN_INFO "PCIEDEV_MMAP:  start %X ; STOP %X; PGOFFSET %X \n",
+         //      vma->vm_start, vma->vm_end, vma->vm_pgoff);
 	
 	tmp_bar_num = vma->vm_pgoff;
 	tmp_size         = (vma->vm_end - vma->vm_start);
 	
 	if(!(dev->mem_base[tmp_bar_num])){
-		printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
-		return -EAGAIN;
+		//printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
+		return -ENOMEM;
 	}
 	tmp_psize = (dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]);
 	if(tmp_psize < tmp_size){
+/*
 		printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
 				(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
-		return -EAGAIN;
+*/
+		return -ENOMEM;
 	}
 	
 	tmp_off         = vma->vm_pgoff << PAGE_SHIFT;
-	//tmp_physical = dev->mem_base[tmp_bar_num] + tmp_off;
 	tmp_physical = dev->mem_base[tmp_bar_num] >> PAGE_SHIFT;
-/*
-	vma->vm_start  = dev->mem_base[tmp_bar_num];
-	vma->vm_end   = dev->mem_base_end[tmp_bar_num];
-	vma->vm_pgoff = (dev->mem_base[tmp_bar_num] >> PAGE_SHIFT);
-*/
 			
-	if (remap_pfn_range(vma, 
-					vma->vm_start , 
-					tmp_physical,
-					tmp_size, 
-					vma->vm_page_prot))
+	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot))
 		return -EAGAIN;
 
 	vma->vm_ops = &upciedev_remap_vm_ops;
