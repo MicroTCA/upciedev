@@ -244,17 +244,13 @@ EXPORT_SYMBOL(pciedev_get_baraddress);
 
 void upciedev_vma_open(struct vm_area_struct *vma)
 {
-/*
 	printk(KERN_NOTICE "UPCIEDEV VMA open, virt %lx, phys %lx\n",
 			vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
-*/
 }
 
 void upciedev_vma_close(struct vm_area_struct *vma)
 {
-/*
 	printk(KERN_NOTICE "UPCIEDEV VMA close.\n");
-*/
 }
 
 static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
