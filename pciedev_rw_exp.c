@@ -42,6 +42,7 @@ ssize_t pciedev_read_exp(struct file *filp, char __user *buf, size_t count, loff
 
 		CORRECT_REGISTER_SIZE(reg_size, dev->register_size);
 		retval = pciedev_read_inline(dev, reg_size, MTCA_SIMPLE_READ, barx_rw, offset_rw, buf, count);
+		retval = sizeof(device_rw);
 	}
 	else
 	{
@@ -61,6 +62,7 @@ ssize_t pciedev_read_exp(struct file *filp, char __user *buf, size_t count, loff
 		CORRECT_REGISTER_SIZE(reading.register_size, dev->register_size);
 		retval = pciedev_read_inline(dev,reading.register_size,MTCA_SIMPLE_READ,reading.barx_rw,
 				                                                                  reading.offset_rw,pcUserBuffer, count);
+		retval = sizeof(device_rw);
 	}
 
 #ifdef DEBUG_TIMING
@@ -113,6 +115,7 @@ ssize_t pciedev_write_exp(struct file *a_filp, const char __user *a_buf, size_t 
 
 		CORRECT_REGISTER_SIZE(reg_size, dev->register_size);
 		retval = pciedev_write_inline(dev, reg_size, MTCA_SIMPLE_WRITE, barx_rw, offset_rw, a_buf, NULL, count);
+		retval = sizeof(device_rw);
 	}
 	else
 	{
@@ -130,7 +133,9 @@ ssize_t pciedev_write_exp(struct file *a_filp, const char __user *a_buf, size_t 
 
 		//reading.mode_rw = W_INITIAL + (reading.mode_rw&_STEP_FOR_NEXT_MODE2_);
 		CORRECT_REGISTER_SIZE(reading.register_size, dev->register_size);
-		retval = pciedev_write_inline(dev, reading.register_size, MTCA_SIMPLE_WRITE,reading.barx_rw, reading.offset_rw, pcUserBuffer, NULL, count);
+		retval = pciedev_write_inline(dev, reading.register_size, MTCA_SIMPLE_WRITE,reading.barx_rw, 
+				                                                          reading.offset_rw, pcUserBuffer, NULL, count);
+		retval = sizeof(device_rw);
 	}
 
 	LeaveCritRegion(&dev->dev_mut);
