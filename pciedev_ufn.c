@@ -29,6 +29,10 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	}
 
 	pciedev_fops->llseek = pciedev_llseek;
+    
+    // copy name over for future reference
+    strncpy( pciedev_cdev_p->pcieDevName, dev_name, sizeof(pciedev_cdev_p->pcieDevName) );
+    pciedev_cdev_p->pcieDevName[ sizeof(pciedev_cdev_p->pcieDevName) - 1 ] = 0;
 
 	*pciedev_cdev_pp = pciedev_cdev_p;
 	pciedev_cdev_p->PCIEDEV_MAJOR             = 47;
@@ -384,7 +388,7 @@ int      pciedev_get_prjinfo(struct pciedev_dev  *bdev)
 EXPORT_SYMBOL(pciedev_get_prjinfo);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-    void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
+    void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
     {
         char prc_entr[32];
         sprintf(prc_entr, "%ss%i", dfn, num);
@@ -393,7 +397,7 @@ EXPORT_SYMBOL(pciedev_get_prjinfo);
         p_upcie_cdev->pciedev_procdir->data = p_upcie_dev;
     }
 
-    void unregister_upciedev_proc(int num, char *dfn)
+    void unregister_upciedev_proc(int num, const char *dfn)
     {
         char prc_entr[32];
         sprintf(prc_entr, "%ss%i", dfn, num);
@@ -438,14 +442,14 @@ EXPORT_SYMBOL(pciedev_get_prjinfo);
         return p - buf;
     }
 #else
-    void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
+    void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
     {
         char prc_entr[32];
         sprintf(prc_entr, "%ss%i", dfn, num);
         p_upcie_cdev->pciedev_procdir = proc_create_data(prc_entr, S_IFREG | S_IRUGO, 0, &upciedev_proc_fops, p_upcie_dev); 
     }
 
-    void unregister_upciedev_proc(int num, char *dfn)
+    void unregister_upciedev_proc(int num, const char *dfn)
     {
         char prc_entr[32];
         sprintf(prc_entr, "%ss%i", dfn, num);

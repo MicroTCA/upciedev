@@ -6,7 +6,7 @@
 #include "pciedev_io.h"
 
 int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id, 
-            struct file_operations *pciedev_fops, pciedev_cdev *pciedev_cdev_p, char *dev_name, int * brd_num)
+            struct file_operations *pciedev_fops, pciedev_cdev *pciedev_cdev_p, pciedev_dev ** ppnew_device )
 {
     
     int    m_brdNum   = 0;
@@ -39,11 +39,13 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     u32 busNumber;
     u32 devNumber;
     u32 funcNumber;
+    pciedev_dev   *pnew_dev;
+    const char    *pdev_name = pciedev_cdev_p->pcieDevName;
     
     char f_name[64];
     char prc_entr[64];
     	
-    printk(KERN_ALERT "############PCIEDEV_PROBE THIS IS U_FUNCTION NAME %s\n", dev_name);
+    printk(KERN_ALERT "############PCIEDEV_PROBE v1 THIS IS U_FUNCTION NAME %s\n", pdev_name );
     
     /*************************BOARD DEV INIT******************************************************/
     printk(KERN_WARNING "PCIEDEV_PROBE CALLED\n");
@@ -58,16 +60,19 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
         return -1;
     }
     printk(KERN_ALERT "PCIEDEV_PROBE : BOARD NUM %i\n", m_brdNum);
-    * brd_num = m_brdNum;
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->binded = 1;
+    pnew_dev = pciedev_cdev_p->pciedev_dev_m[m_brdNum];
+    *ppnew_device = pnew_dev;
+
+    // flag this as taken
+    pnew_dev->binded = 1;
     
     if ((err= pci_enable_device(dev)))
             return err;
-    err = pci_request_regions(dev, dev_name);
+    err = pci_request_regions(dev, pdev_name);
     if (err ){
         pci_disable_device(dev);
         pci_set_drvdata(dev, NULL);
-        pciedev_cdev_p->pciedev_dev_m[m_brdNum]->binded = 0;
+        pnew_dev->binded = 0;
         return err;
     }
     pci_set_master(dev);
@@ -95,12 +100,12 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     tmp_dev_num  = tmp_slot_num;
     printk(KERN_ALERT "PCIEDEV_PROBE:SLOT NUM %d DEV NUM%d SLOT_CAP %X\n",tmp_slot_num,tmp_dev_num,tmp_slot_cap);
     
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->swap         = 0;
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->slot_num  = tmp_slot_num;
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->bus_func  = tmp_bus_func;
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_pci_dev = dev;
+    pnew_dev->swap         = 0;
+    pnew_dev->slot_num  = tmp_slot_num;
+    pnew_dev->bus_func  = tmp_bus_func;
+    pnew_dev->pciedev_pci_dev = dev;
 
-    dev_set_drvdata(&(dev->dev), ( pciedev_cdev_p->pciedev_dev_m[m_brdNum]));
+    dev_set_drvdata(&(dev->dev), pnew_dev );
     
     pcie_cap = pci_find_capability (dev, PCI_CAP_ID_EXP);
     printk(KERN_ALERT "DAMC_PROBE: PCIE CAP address %X\n",pcie_cap);
@@ -133,14 +138,14 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
 
     if (!(cur_mask = pci_set_dma_mask(dev, DMA_BIT_MASK(64))) &&
         !(cur_mask = pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(64)))) {
-             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_dma_64mask = 1;
+             pnew_dev->dev_dma_64mask = 1;
             printk(KERN_ALERT "CURRENT 64MASK %i\n", cur_mask);
     } else {
             if ((err = pci_set_dma_mask(dev, DMA_BIT_MASK(32))) &&
                 (err = pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)))) {
                     printk(KERN_ALERT "No usable DMA configuration\n");
             }else{
-             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_dma_64mask = 0;
+             pnew_dev->dev_dma_64mask = 0;
             printk(KERN_ALERT "CURRENT 32MASK %i\n", cur_mask);
             }
     }    
@@ -160,85 +165,85 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     printk(KERN_INFO "PCIEDEV_PROBE: PCI_SUBSYSTEM_ID  %i\n",subdevice_id);
     printk(KERN_INFO "PCIEDEV_PROBE: PCI_CLASS_DEVICE  %i\n",class_code);
 
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->vendor_id      = vendor_id;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->device_id      = device_id;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->subvendor_id   = subvendor_id;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->subdevice_id   = subdevice_id;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->class_code     = class_code;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->revision       = revision;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_line       = irq_line;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_pin        = irq_pin;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->scratch_bar    = 0;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->scratch_offset = 0;
+     pnew_dev->vendor_id      = vendor_id;
+     pnew_dev->device_id      = device_id;
+     pnew_dev->subvendor_id   = subvendor_id;
+     pnew_dev->subdevice_id   = subdevice_id;
+     pnew_dev->class_code     = class_code;
+     pnew_dev->revision       = revision;
+     pnew_dev->irq_line       = irq_line;
+     pnew_dev->irq_pin        = irq_pin;
+     pnew_dev->scratch_bar    = 0;
+     pnew_dev->scratch_offset = 0;
     
     /*******SETUP BARs******/
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_all_mems = 0;
+    pnew_dev->pciedev_all_mems = 0;
     for (i = 0, nToAdd = 1; i < NUMBER_OF_BARS; ++i, nToAdd *= 2)
         {
             res_start = pci_resource_start(dev, i);
             res_end = pci_resource_end(dev, i);
             res_flag = pci_resource_flags(dev, i);
-            pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base[i] = res_start;
-            pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_end[i]   = res_end;
-            pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i]  = res_flag;
+            pnew_dev->mem_base[i] = res_start;
+            pnew_dev->mem_base_end[i]   = res_end;
+            pnew_dev->mem_base_flag[i]  = res_flag;
             if(res_start){
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = pci_iomap(dev, i, (res_end - res_start));
+                pnew_dev->memmory_base[i] = pci_iomap(dev, i, (res_end - res_start));
                 printk(KERN_INFO "PCIEDEV_PROBE: mem_region %d address %X  SIZE %X FLAG %X\n",
                 i,res_start, (res_end - res_start),
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i]);
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i] = (res_end - res_start);
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_all_mems += nToAdd;
+                pnew_dev->mem_base_flag[i]);
+                pnew_dev->rw_off[i] = (res_end - res_start);
+                pnew_dev->pciedev_all_mems += nToAdd;
             }
             else{
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = 0;
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i]       = 0;
+                pnew_dev->memmory_base[i] = 0;
+                pnew_dev->rw_off[i]       = 0;
                 printk(KERN_INFO "PCIEDEV: NO BASE%i address\n", i);
             }
         }
 
     /******GET BRD INFO******/
-    tmp_info = pciedev_get_brdinfo(pciedev_cdev_p->pciedev_dev_m[m_brdNum]);
+    tmp_info = pciedev_get_brdinfo(pnew_dev);
     printk(KERN_ALERT "$$$$$$$$$$$$$PROBE  IS STARTUP BOARD %i\n", tmp_info);
     if(tmp_info){
-        tmp_info = pciedev_get_prjinfo(pciedev_cdev_p->pciedev_dev_m[m_brdNum]);
+        tmp_info = pciedev_get_prjinfo(pnew_dev);
         printk(KERN_ALERT "$$$$$$$$$$$$$PROBE  NUMBER OF PRJs %i\n", tmp_info);
     }
     /*******PREPARE INTERRUPTS******/
     
-    // pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag = IRQF_SHARED | IRQF_DISABLED;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag = IRQF_SHARED ;
+    // pnew_dev->irq_flag = IRQF_SHARED | IRQF_DISABLED;
+     pnew_dev->irq_flag = IRQF_SHARED ;
     #ifdef CONFIG_PCI_MSI
     if (pci_enable_msi(dev) == 0) {
-             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->msi = 1;
-             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag &= ~IRQF_SHARED;
+             pnew_dev->msi = 1;
+             pnew_dev->irq_flag &= ~IRQF_SHARED;
             printk(KERN_ALERT "MSI ENABLED\n");
     } else {
-             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->msi = 0;
+             pnew_dev->msi = 0;
             printk(KERN_ALERT "MSI NOT SUPPORTED\n");
     }
     #endif
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pci_dev_irq = dev->irq;
-     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_mode = 0;
+     pnew_dev->pci_dev_irq = dev->irq;
+     pnew_dev->irq_mode = 0;
     
     /* Send uvents to udev, so it'll create /dev nodes */
-    if( pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_sts){
-        pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_sts   = 0;
+    if( pnew_dev->dev_sts){
+        pnew_dev->dev_sts   = 0;
         device_destroy(pciedev_cdev_p->pciedev_class,  MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR, 
                                                   pciedev_cdev_p->PCIEDEV_MINOR + m_brdNum));
     }
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_sts   = 1;
-    sprintf(pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_name, "%ss%d", dev_name, tmp_slot_num);
-    sprintf(f_name, "%ss%d", dev_name, tmp_slot_num);
-    sprintf(prc_entr, "%ss%d", dev_name, tmp_slot_num);
+    pnew_dev->dev_sts   = 1;
+    sprintf(pnew_dev->dev_name, "%ss%d", pdev_name, tmp_slot_num);
+    sprintf(f_name, "%ss%d", pdev_name, tmp_slot_num);
+    sprintf(prc_entr, "%ss%d", pdev_name, tmp_slot_num);
     printk(KERN_INFO "PCIEDEV_PROBE:  CREAT DEVICE MAJOR %i MINOR %i F_NAME %s DEV_NAME %s\n",
-               pciedev_cdev_p->PCIEDEV_MAJOR, (pciedev_cdev_p->PCIEDEV_MINOR + m_brdNum), f_name);
+               pciedev_cdev_p->PCIEDEV_MAJOR, (pciedev_cdev_p->PCIEDEV_MINOR + m_brdNum), f_name, pnew_dev->dev_name);
     
-    device_create(pciedev_cdev_p->pciedev_class, NULL, MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR,  pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_minor),
-                            & pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_pci_dev->dev, f_name, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_name);
+    device_create(pciedev_cdev_p->pciedev_class, NULL, MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR,  pnew_dev->dev_minor),
+                            & pnew_dev->pciedev_pci_dev->dev, f_name, pnew_dev->dev_name);
 
     
-    register_upciedev_proc(tmp_slot_num, dev_name, pciedev_cdev_p->pciedev_dev_m[m_brdNum], pciedev_cdev_p);
-    pciedev_cdev_p->pciedev_dev_m[m_brdNum]->register_size = RW_D32;
+    register_upciedev_proc(tmp_slot_num, pdev_name, pnew_dev, pciedev_cdev_p);
+    pnew_dev->register_size = RW_D32;
 	
     pciedev_cdev_p->pciedevModuleNum ++;
     return 0;

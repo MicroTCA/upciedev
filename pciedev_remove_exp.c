@@ -4,31 +4,35 @@
 
 #include "pciedev_ufn.h"
 
-int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char *dev_name, int * brd_num)
+int pciedev_remove_exp(pciedev_dev *pciedevdev)
 {
-     pciedev_dev                *pciedevdev;
-     int                    tmp_dev_num  = 0;
-     int                    tmp_slot_num  = 0;
-     int                    m_brdNum      = 0;
-     char                f_name[64];
-     char                prc_entr[64];
-     int                   i;
-     int                   nLock = 1;
+    struct pci_dev *dev;
+    pciedev_cdev   *pciedev_cdev_m;
+    const char     *dev_name;
+    int             tmp_dev_num  = 0;
+    int             tmp_slot_num  = 0;
+    int             m_brdNum      = 0;
+    char            f_name[64];
+    char            prc_entr[64];
+    int             i;
+    int             nLock = 1;
      
-     struct list_head *pos;
-     struct list_head *npos;
-     struct pciedev_prj_info  *tmp_prj_info_list;
+    struct list_head *pos;
+    struct list_head *npos;
+    struct pciedev_prj_info  *tmp_prj_info_list;
      
     upciedev_file_list *tmp_file_list;
     struct list_head *fpos, *q;
-     
-     printk(KERN_ALERT "PCIEDEV_REMOVE_EXP CALLED\n");
+
+    printk(KERN_ALERT "PCIEDEV_REMOVE_EXP CALLED\n");
     
-    pciedevdev = dev_get_drvdata(&(dev->dev));
-    tmp_dev_num  = pciedevdev->dev_num;
+    dev            = pciedevdev->pciedev_pci_dev;
+    pciedev_cdev_m = pciedevdev->parent_dev;
+    dev_name       = pciedev_cdev_m->pcieDevName;
+
+    tmp_dev_num   = pciedevdev->dev_num;
     tmp_slot_num  = pciedevdev->slot_num;
     m_brdNum      = pciedevdev->brd_num;
-    *brd_num        = tmp_slot_num;
     sprintf(f_name, "%ss%d", dev_name, tmp_slot_num);
     sprintf(prc_entr, "%ss%d", dev_name, tmp_slot_num);
     printk(KERN_ALERT "PCIEDEV_REMOVE: SLOT %d DEV %d BOARD %i\n", tmp_slot_num, tmp_dev_num, m_brdNum);
@@ -51,12 +55,12 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
        printk(KERN_ALERT "REMOVING IRQ\n");
        if(pciedevdev->msi){
            printk(KERN_ALERT "DISABLE MSI\n");
-           pci_disable_msi((pciedevdev->pciedev_pci_dev));
+           pci_disable_msi(dev);
        }
     }else{
         if(pciedevdev->msi){
            printk(KERN_ALERT "DISABLE MSI\n");
-           pci_disable_msi((pciedevdev->pciedev_pci_dev));
+           pci_disable_msi(dev);
        }
     }
      
@@ -75,7 +79,7 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
         }
     }
         
-    pci_release_regions((pciedevdev->pciedev_pci_dev));
+    pci_release_regions(dev);
     printk(KERN_INFO "PCIEDEV_REMOVE:  DESTROY DEVICE MAJOR %i MINOR %i\n",
                pciedev_cdev_m->PCIEDEV_MAJOR, (pciedev_cdev_m->PCIEDEV_MINOR + pciedevdev->brd_num));
     device_destroy(pciedev_cdev_m->pciedev_class,  MKDEV(pciedev_cdev_m->PCIEDEV_MAJOR, 

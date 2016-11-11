@@ -25,6 +25,8 @@
 #define	_DEPRICATED2_
 #define	_LOCK_TIMEOUT_MS_	2000
 
+#define PCIEDEV_MAX_NAME_LEN  32
+
 #include <linux/version.h>
 #include <linux/pci.h>
 #include <linux/types.h>	/* size_t */
@@ -171,35 +173,36 @@ struct pciedev_dev {
 	u32    scratch_bar;
 	u32    scratch_offset;
 
-	u8                         msi;
-	int                         irq_flag;
-	u16                       irq_mode;
-	u8                         irq_line;
-	u8                         irq_pin;
-	u32                       pci_dev_irq;
+	u8                       msi;
+	int                      irq_flag;
+	u16                      irq_mode;
+	u8                       irq_line;
+	u8                       irq_pin;
+	u32                      pci_dev_irq;
 
-	struct pciedev_cdev *parent_dev;
-	void                          *dev_str;
+	struct pciedev_cdev     *parent_dev;
+	void                    *dev_str;
     
-	struct pciedev_brd_info brd_info_list;
+	struct pciedev_brd_info  brd_info_list;
 	struct pciedev_prj_info  prj_info_list;
-	int                                 startup_brd;
-	int                                 startup_prj_num;
+	int                      startup_brd;
+	int                      startup_prj_num;
 };
 typedef struct pciedev_dev pciedev_dev;
 
 struct pciedev_cdev {
-	u16 UPCIEDEV_VER_MAJ;
-	u16 UPCIEDEV_VER_MIN;
-	u16 PCIEDEV_DRV_VER_MAJ;
-	u16 PCIEDEV_DRV_VER_MIN;
+	u16   UPCIEDEV_VER_MAJ;
+	u16   UPCIEDEV_VER_MIN;
+	u16   PCIEDEV_DRV_VER_MAJ;
+	u16   PCIEDEV_DRV_VER_MIN;
 	int   PCIEDEV_MAJOR ;     /* major by default */
 	int   PCIEDEV_MINOR  ;    /* minor by default */
 
-	pciedev_dev                   *pciedev_dev_m[PCIEDEV_NR_DEVS + 1];
-	struct class                    *pciedev_class;
+	pciedev_dev               *pciedev_dev_m[PCIEDEV_NR_DEVS + 1];
+	struct class              *pciedev_class;
 	struct proc_dir_entry     *pciedev_procdir;
-	int                                   pciedevModuleNum;
+	int                        pciedevModuleNum;
+    char                       pcieDevName[PCIEDEV_MAX_NAME_LEN];
 };
 typedef struct pciedev_cdev pciedev_cdev;
 
@@ -207,8 +210,8 @@ typedef struct pciedev_cdev pciedev_cdev;
 void     upciedev_cleanup_module_exp(pciedev_cdev **);
 int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, char *);
 
-int       pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, char *, int * );
-int       pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev *, char *, int *);
+int       pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, pciedev_dev ** );
+int       pciedev_remove_exp(pciedev_dev *);
 
 int        pciedev_open_exp( struct inode *, struct file * );
 int        pciedev_release_exp(struct inode *, struct file *);
@@ -218,7 +221,7 @@ loff_t    pciedev_llseek(struct file *, loff_t, int);
 long     pciedev_ioctl_exp(struct file *, unsigned int* , unsigned long* , pciedev_cdev *);
 int        pciedev_set_drvdata(struct pciedev_dev *, void *);
 void*    pciedev_get_drvdata(struct pciedev_dev *);
-int        pciedev_get_brdnum(struct pci_dev *);
+int       pciedev_get_brdnum(struct pci_dev *);
 pciedev_dev*   pciedev_get_pciedata(struct pci_dev *);
 void*    pciedev_get_baraddress(int, struct pciedev_dev *);
 
@@ -226,14 +229,16 @@ int       pciedev_get_prjinfo(struct pciedev_dev *);
 int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
 
+//int       pciedev_check_scratch(struct pciedev_dev *, int );
+
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *);
 #else
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev *, char *);
 #endif
 
-void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);
-void unregister_upciedev_proc(int num, char *dfn);
+void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);
+void unregister_upciedev_proc(int num, const char *dfn);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 	int        pciedev_procinfo(char *, char **, off_t, int, int *,void *);
