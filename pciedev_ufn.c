@@ -9,7 +9,7 @@
 
 
 
-int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, char *dev_name)
+int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, const char *dev_name)
 {
 	int                    i          = 0;
 	int                    k         = 0;
@@ -59,13 +59,14 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 		pciedev_cdev_p->PCIEDEV_DRV_VER_MAJ, pciedev_cdev_p->PCIEDEV_DRV_VER_MIN);
     
     
-	for(i = 0; i <= PCIEDEV_NR_DEVS;i++){
-        
-		pciedev_cdev_p->pciedev_dev_m[i] = kzalloc(sizeof(pciedev_dev), GFP_KERNEL);
-		if(!pciedev_cdev_p->pciedev_dev_m[i]){
+	for(i = 0; i <= PCIEDEV_NR_DEVS;i++) {
+        pciedev_dev *pcurdev;
+        pcurdev = kzalloc(sizeof(pciedev_dev), GFP_KERNEL);
+		pciedev_cdev_p->pciedev_dev_m[i] = pcurdev;
+		if(!pcurdev) {
 			printk(KERN_ALERT "AFTER_INIT CREATE DEV STRUCT NO MEM\n");
-			for(k = 0; k < i; k++){
-				if(pciedev_cdev_p->pciedev_dev_m[k]){
+			for(k = 0; k < i; k++) {
+				if(pciedev_cdev_p->pciedev_dev_m[k]) {
 					kfree(pciedev_cdev_p->pciedev_dev_m[k]);
 				}
 			}
@@ -75,37 +76,37 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 			return -ENOMEM;
 		}
         
-	pciedev_cdev_p->pciedev_dev_m[i]->parent_dev = pciedev_cdev_p;
-	devno = MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR, pciedev_cdev_p->PCIEDEV_MINOR + i);
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_num    = devno;
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_minor  = (pciedev_cdev_p->PCIEDEV_MINOR + i);
-	cdev_init(&(pciedev_cdev_p->pciedev_dev_m[i]->cdev), pciedev_fops);
-	pciedev_cdev_p->pciedev_dev_m[i]->cdev.owner = THIS_MODULE;
-	pciedev_cdev_p->pciedev_dev_m[i]->cdev.ops = pciedev_fops;
-	result = cdev_add(&(pciedev_cdev_p->pciedev_dev_m[i]->cdev), devno, 1);
-	if (result){
-		printk(KERN_NOTICE "Error %d adding devno%d num%d\n", result, devno, i);
-		return 1;
-	}
-	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->prj_info_list.prj_list));
-	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.node_file_list));
-	//mutex_init(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut));
-	InitCritRegionLock(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut), _DEFAULT_TIMEOUT_);
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_sts                   = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_file_ref            = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->irq_mode                = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->msi                         = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_dma_64mask   = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->pciedev_all_mems  = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->brd_num                = i;
-	pciedev_cdev_p->pciedev_dev_m[i]->binded                   = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.file_cnt = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->null_dev                   = 0;
+        pcurdev->parent_dev = pciedev_cdev_p;
+        devno = MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR, pciedev_cdev_p->PCIEDEV_MINOR + i);
+        pcurdev->dev_num    = devno;
+        pcurdev->dev_minor  = (pciedev_cdev_p->PCIEDEV_MINOR + i);
+        cdev_init(&(pcurdev->cdev), pciedev_fops);
+        pcurdev->cdev.owner = THIS_MODULE;
+        pcurdev->cdev.ops = pciedev_fops;
+        result = cdev_add(&(pcurdev->cdev), devno, 1);
+        if (result){
+            printk(KERN_NOTICE "Error %d adding devno%d num%d\n", result, devno, i);
+            return 1;
+        }
+        INIT_LIST_HEAD(&(pcurdev->prj_info_list.prj_list));
+        INIT_LIST_HEAD(&(pcurdev->dev_file_list.node_file_list));
+        //mutex_init(&(pcurdev->dev_mut));
+        InitCritRegionLock(&(pcurdev->dev_mut), _DEFAULT_TIMEOUT_);
+        pcurdev->dev_sts                = 0;
+        pcurdev->dev_file_ref           = 0;
+        pcurdev->irq_mode               = 0;
+        pcurdev->msi                    = 0;
+        pcurdev->dev_dma_64mask         = 0;
+        pcurdev->pciedev_all_mems       = 0;
+        pcurdev->brd_num                = i;
+        pcurdev->binded                 = 0;
+        pcurdev->dev_file_list.file_cnt = 0;
+        pcurdev->null_dev               = 0;
 
-	if(i == PCIEDEV_NR_DEVS){
-		pciedev_cdev_p->pciedev_dev_m[i]->binded        = 1;
-		pciedev_cdev_p->pciedev_dev_m[i]->null_dev      = 1;
-	}
+        if(i == PCIEDEV_NR_DEVS) {
+            pcurdev->binded        = 1;
+            pcurdev->null_dev      = 1;
+        }
     }
      
     return result; /* succeed */
@@ -244,18 +245,14 @@ void*   pciedev_get_baraddress(int br_num, struct pciedev_dev  *dev)
 }
 EXPORT_SYMBOL(pciedev_get_baraddress);
 
-#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *),struct pciedev_dev  *pdev, char  *dev_name)
-#else
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev  *pdev, char  *dev_name)
-#endif
+int pciedev_setup_interrupt_exp(pciedev_irqfn pciedev_interrupt, struct pciedev_dev *pdev)
 {
     int result = 0;
     
     /*******SETUP INTERRUPTS******/
     pdev->irq_mode = 1;
     result = request_irq(pdev->pci_dev_irq, pciedev_interrupt,
-                        pdev->irq_flag, dev_name, pdev);
+                        pdev->irq_flag, pdev->parent_dev->pcieDevName, pdev);
     printk(KERN_INFO "PCIEDEV_PROBE:  assigned IRQ %i RESULT %i\n",
                pdev->pci_dev_irq, result);
     if (result) {
@@ -264,7 +261,23 @@ int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), stru
     }
     return result;
 }
+EXPORT_SYMBOL(pciedev_setup_interrupt_exp);
+
+
+// backward compatibility
+int pciedev_setup_interrupt(pciedev_irqfn pciedev_interrupt, struct pciedev_dev  *pdev, const char *dev_name)
+{
+    if( strcmp(pdev->parent_dev->pcieDevName, dev_name) != 0 )
+    {
+        printk(KERN_INFO "SETUP_INTERRUPT: invalid name %s / %s\n", 
+            pdev->parent_dev->pcieDevName, dev_name );
+        return -1;
+    }
+    return pciedev_setup_interrupt_exp(pciedev_interrupt, pdev);
+}
 EXPORT_SYMBOL(pciedev_setup_interrupt);
+
+
 
 int      pciedev_get_brdinfo(struct pciedev_dev  *bdev)
 {

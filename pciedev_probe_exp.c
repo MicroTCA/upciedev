@@ -5,7 +5,7 @@
 #include "pciedev_ufn.h"
 #include "pciedev_io.h"
 
-int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id, 
+int    pciedev_probe2_exp(struct pci_dev *dev, const struct pci_device_id *id, 
             struct file_operations *pciedev_fops, pciedev_cdev *pciedev_cdev_p, pciedev_dev ** ppnew_device )
 {
     
@@ -248,4 +248,29 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     pciedev_cdev_p->pciedevModuleNum ++;
     return 0;
 }
+EXPORT_SYMBOL(pciedev_probe2_exp);
+
+
+// backward-compatibility version
+int pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id, 
+    struct file_operations *pciedev_fops, pciedev_cdev *pciedev_cdev_p, 
+    const char *devname, int *pbrdnum )
+{
+    int rv;
+    pciedev_dev *pnewdev;
+    
+    if( strcmp(pciedev_cdev_p->pcieDevName, devname) != 0 ) {
+        printk(KERN_ALERT "PCIEDEV_PROBE: NAME MISMATCH [%s/%s]\n", 
+            pciedev_cdev_p->pcieDevName, devname);
+        return -1;
+    }
+    rv = pciedev_probe2_exp( dev, id, pciedev_fops, pciedev_cdev_p, &pnewdev );
+    if( rv == 0 ) {
+        (*pbrdnum) = pnewdev->brd_num;
+    }
+    return rv;
+}
 EXPORT_SYMBOL(pciedev_probe_exp);
+
+
+

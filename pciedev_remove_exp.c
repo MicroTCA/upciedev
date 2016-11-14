@@ -4,7 +4,7 @@
 
 #include "pciedev_ufn.h"
 
-int pciedev_remove_exp(pciedev_dev *pciedevdev)
+int pciedev_remove2_exp(pciedev_dev *pciedevdev)
 {
     struct pci_dev *dev;
     pciedev_cdev   *pciedev_cdev_m;
@@ -104,4 +104,25 @@ int pciedev_remove_exp(pciedev_dev *pciedevdev)
     LeaveCritRegion(&pciedevdev->dev_mut);
     return 0;
 }
+EXPORT_SYMBOL(pciedev_remove2_exp);
+
+// backward compatibility version
+int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev *pciedev_cdev_m, const char *devname, int *pslotnum)
+{
+    int rv;
+    pciedev_dev *pciedevdev;
+
+    if( strcmp(pciedev_cdev_m->pcieDevName, devname) != 0 ) {
+        printk(KERN_ALERT "PCIEDEV_REMOVE: NAME MISMATCH [%s/%s]\n", 
+            pciedev_cdev_m->pcieDevName, devname);
+        return -1;
+    }    
+    pciedevdev = dev_get_drvdata(&(dev->dev));
+    rv = pciedev_remove2_exp( pciedevdev );
+    if( rv == 0 ) {
+        *pslotnum = pciedevdev->slot_num;
+    }
+    return rv;
+}
 EXPORT_SYMBOL(pciedev_remove_exp);
+

@@ -208,10 +208,11 @@ typedef struct pciedev_cdev pciedev_cdev;
 
 
 void     upciedev_cleanup_module_exp(pciedev_cdev **);
-int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, char *);
+int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, const char *);
 
-int       pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, pciedev_dev ** );
-int       pciedev_remove_exp(pciedev_dev *);
+int       pciedev_probe2_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, pciedev_dev ** );
+int       pciedev_remove2_exp(pciedev_dev *);
+
 
 int        pciedev_open_exp( struct inode *, struct file * );
 int        pciedev_release_exp(struct inode *, struct file *);
@@ -231,11 +232,42 @@ int       pciedev_get_brdinfo(struct pciedev_dev *);
 
 //int       pciedev_check_scratch(struct pciedev_dev *, int );
 
-#if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *);
+
+// ------------------- kernel compatibility macros
+#if LINUX_VERSION_CODE < 0x20613
+    // old style interrupt handler (pre 2.6.19)
+    typedef irqreturn_t (*pciedev_irqfn)(int , void *, struct pt_regs *);
+    #define UPKCOMPAT_IHARGPOS(__reg) , struct pt_regs * __reg
 #else
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev *, char *);
+    // new style interrupt handler (2.6.19 onwards)
+    typedef irqreturn_t (*pciedev_irqfn)(int , void *);
+    #define UPKCOMPAT_IHARGPOS(__reg)
 #endif
+
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+    // new style
+    #define UPKCOMPAT_INIT
+    #define UPKCOMPAT_EXIT
+    #define UPKCOMPAT_EXIT_P(__fn) __fn
+#else
+    // old style
+    #define UPKCOMPAT_INIT __devinit
+    #define UPKCOMPAT_EXIT __devexit
+    #define UPKCOMPAT_EXIT_P(__fn) __devexit_p(__fn)
+#endif
+
+
+
+
+int pciedev_setup_interrupt_exp(pciedev_irqfn pciedev_interrupt, struct pciedev_dev *);
+
+// backward compatibility
+int pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, const char *, int * );
+int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev *, const char *, int *);
+int pciedev_setup_interrupt(pciedev_irqfn pciedev_interrupt, struct pciedev_dev *, const char *);
+
+
 
 void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);
 void unregister_upciedev_proc(int num, const char *dfn);
