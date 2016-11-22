@@ -239,11 +239,15 @@ int       pciedev_get_brdinfo(struct pciedev_dev *);
 
 void upciedev_vma_open(struct vm_area_struct *vma);
 void upciedev_vma_close(struct vm_area_struct *vma);
-static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma);
-static struct vm_operations_struct upciedev_remap_vm_ops = {
-	.open =  upciedev_vma_open,
-	.close = upciedev_vma_close,
-};
+//static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma);
+int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma);
+
+
+
+//struct vm_operations_struct upciedev_remap_vm_ops = {
+//	.open =  upciedev_vma_open,
+//	.close = upciedev_vma_close,
+//};
 
 // end mmap staff
 

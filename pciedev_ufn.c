@@ -7,7 +7,10 @@
 
 #include "pciedev_ufn.h"
 
-
+struct vm_operations_struct upciedev_remap_vm_ops = {
+	.open =  upciedev_vma_open,
+	.close = upciedev_vma_close,
+};
 
 int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, char *dev_name)
 {
@@ -253,7 +256,8 @@ void upciedev_vma_close(struct vm_area_struct *vma)
 	printk(KERN_NOTICE "UPCIEDEV VMA close.\n");
 }
 
-static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
+//static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
+int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 {
 	int tmp_bar_num;
 	unsigned long tmp_size = 0;
@@ -274,12 +278,15 @@ static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 		return -ENOMEM;
 	}
 	tmp_psize = (dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]);
-	if(tmp_psize < tmp_size){
-/*
-		printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
-				(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
-*/
-		return -ENOMEM;
+	
+	if(tmp_psize > PAGE_SIZE){
+		if(tmp_psize < tmp_size){
+	/*
+			printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
+					(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
+	*/
+			return -ENOMEM;
+		}
 	}
 	
 	tmp_off         = vma->vm_pgoff << PAGE_SHIFT;
@@ -622,7 +629,7 @@ EXPORT_SYMBOL(pciedev_get_prjinfo);
 #endif
 EXPORT_SYMBOL(pciedev_procinfo);
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 const struct file_operations upciedev_proc_fops = {
 	.open = pciedev_proc_open,
 	.read = seq_read,
@@ -630,3 +637,4 @@ const struct file_operations upciedev_proc_fops = {
 	.release = single_release,
 };
 EXPORT_SYMBOL(upciedev_proc_fops);
+#endif

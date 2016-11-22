@@ -257,7 +257,8 @@ static inline ssize_t pciedev_read_inline(struct pciedev_dev* a_dev, u_int16_t a
 			scrtch_check = pciedev_check_scratch(a_dev);
 			if (scrtch_check)
 			{
-				ERRCT("ERROR: PCIE error!\n");
+				//ERRCT("ERROR: PCIE error! DATA %X SCRATCH %X \n", tmp_data_for_rw, scrachTest);
+				//ERRCT("ERROR: PCIE error! memor_base[%u]=%p, offset=%X, registerSize=%u\n", a_bar, a_dev->memmory_base[a_bar], a_offset, unRegisterSize);
 				retval = -ENOMEM; break;
 			}
 		}
@@ -356,6 +357,8 @@ static inline int pciedev_check_scratch(struct pciedev_dev * a_dev)
 
 	scrachTest = a_dev->register_size == RW_D8 ? 0xff : (a_dev->register_size == RW_D16 ? 0xffff : 0xffffffff);
 	Read_Write_Private(a_dev->register_size,MTCA_SIMPLE_READ,address,&tmp_data_for_rw,NULL,NULL);
+	
+	//ERRCT("ERROR: PCIE error! DATA %X SCRATCH %X ADDRESS %X \n", tmp_data_for_rw, scrachTest, (int)address);
 
 	if (tmp_data_for_rw == scrachTest){ return 1; }
 
