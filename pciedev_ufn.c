@@ -7,7 +7,10 @@
 
 #include "pciedev_ufn.h"
 
-
+struct vm_operations_struct upciedev_remap_vm_ops = {
+	.open =  upciedev_vma_open,
+	.close = upciedev_vma_close,
+};
 
 int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, char *dev_name)
 {
@@ -239,6 +242,64 @@ void*   pciedev_get_baraddress(int br_num, struct pciedev_dev  *dev)
     return tmp_address;
 }
 EXPORT_SYMBOL(pciedev_get_baraddress);
+
+
+
+void upciedev_vma_open(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "UPCIEDEV VMA open, virt %lx, phys %lx\n",
+			vma->vm_start, vma->vm_pgoff << PAGE_SHIFT);
+}
+
+void upciedev_vma_close(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "UPCIEDEV VMA close.\n");
+}
+
+//static int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
+int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
+{
+	int tmp_bar_num;
+	unsigned long tmp_size = 0;
+	unsigned long tmp_off;
+	unsigned long tmp_physical;
+	unsigned long tmp_psize = 0;
+	
+	struct pciedev_dev       *dev  = filp->private_data;
+	
+	//printk(KERN_INFO "PCIEDEV_MMAP:  start %X ; STOP %X; PGOFFSET %X \n",
+         //      vma->vm_start, vma->vm_end, vma->vm_pgoff);
+	
+	tmp_bar_num = vma->vm_pgoff;
+	tmp_size         = (vma->vm_end - vma->vm_start);
+	
+	if(!(dev->mem_base[tmp_bar_num])){
+		//printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
+		return -ENOMEM;
+	}
+	tmp_psize = (dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]);
+	
+	if(tmp_psize > PAGE_SIZE){
+		if(tmp_psize < tmp_size){
+	/*
+			printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
+					(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
+	*/
+			return -ENOMEM;
+		}
+	}
+	
+	tmp_off         = vma->vm_pgoff << PAGE_SHIFT;
+	tmp_physical = dev->mem_base[tmp_bar_num] >> PAGE_SHIFT;
+			
+	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot))
+		return -EAGAIN;
+
+	vma->vm_ops = &upciedev_remap_vm_ops;
+	upciedev_vma_open(vma);
+	return 0;
+}
+EXPORT_SYMBOL(pciedev_remap_mmap_exp);
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *),struct pciedev_dev  *pdev, char  *dev_name)
@@ -568,7 +629,7 @@ EXPORT_SYMBOL(pciedev_get_prjinfo);
 #endif
 EXPORT_SYMBOL(pciedev_procinfo);
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 const struct file_operations upciedev_proc_fops = {
 	.open = pciedev_proc_open,
 	.read = seq_read,
@@ -576,3 +637,4 @@ const struct file_operations upciedev_proc_fops = {
 	.release = single_release,
 };
 EXPORT_SYMBOL(upciedev_proc_fops);
+#endif
