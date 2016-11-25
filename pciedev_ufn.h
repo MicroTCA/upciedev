@@ -272,6 +272,18 @@ int pciedev_setup_interrupt(pciedev_irqfn pciedev_interrupt, struct pciedev_dev 
 void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);
 void unregister_upciedev_proc(int num, const char *dfn);
 
+// macros to encapsulate register-level i/o
+#define pciedev_iowrite32(__data, __addr) iowrite32( (__data), (__addr) )
+#define pciedev_ioread32(__addr)          ioread32( (__addr) )
+
+// macros to encapsulate DMA (simplest version, coherent)
+#define pciedev_dma_alloc( __dev, __size, __handlePtr  ) \
+     dma_alloc_coherent( &( (__dev)->pciedev_pci_dev->dev),  (__size), (__handlePtr), GFP_KERNEL | GFP_DMA )
+
+#define pciedev_dma_free( __dev, __size, __vPtr, __handle ) \
+     dma_free_coherent( &( (__dev)->pciedev_pci_dev->dev) , (__size), (__vPtr), (__handle) )
+
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 	int        pciedev_procinfo(char *, char **, off_t, int, int *,void *);
 #else
