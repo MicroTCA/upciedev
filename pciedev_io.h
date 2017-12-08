@@ -167,6 +167,57 @@ struct device_i2c_rw  {
 };
 typedef struct device_i2c_rw device_i2c_rw;
 
+//PICMG SHAPI
+struct picmg_shapi_device_info {
+    u_int SHAPI_VERSION;
+    u_int SHAPI_FIRST_MODULE_ADDRESS;
+    u_int SHAPI_HW_IDS ; 
+    u_int SHAPI_FW_IDS  ;
+    u_int SHAPI_FW_VERSION  ;
+    u_int SHAPI_FW_TIMESTAMP  ;
+    u_int SHAPI_FW_NAME[3];
+    u_int SHAPI_DEVICE_CAP;
+    u_int SHAPI_DEVICE_STATUS ; 
+    u_int SHAPI_DEVICE_CONTROL  ;
+    u_int SHAPI_IRQ_MASK  ;
+    u_int SHAPI_IRQ_FLAG  ;
+    u_int SHAPI_IRQ_ACTIVE;
+    u_int SHAPI_SCRATCH_REGISTER;
+    char fw_name[13];
+    int    number_of_modules;
+};
+typedef struct picmg_shapi_device_info picmg_shapi_device_info;
+
+struct picmg_shapi_module_info {
+    u_int SHAPI_VERSION;
+    u_int SHAPI_NEXT_MODULE_ADDRESS;
+    u_int SHAPI_MODULE_FW_IDS ; 
+    u_int SHAPI_MODULE_VERSION  ;
+    u_int SHAPI_MODULE_NAME[2] ;
+    u_int SHAPI_MODULE_CAP;
+    u_int SHAPI_MODULE_STATUS;
+    u_int SHAPI_MODULE_CONTROL ; 
+    u_int SHAPI_IRQ_ID  ;
+    u_int SHAPI_IRQ_FLAG_CLEAR  ;
+    u_int SHAPI_IRQ_MASK  ;
+    u_int SHAPI_IRQ_FLAG;
+    u_int SHAPI_IRQ_ACTIVE;
+    char module_name[9];
+    int module_num;
+};
+typedef struct picmg_shapi_module_info picmg_shapi_module_info;
+
+struct device_phys_address  {
+	u_int    slot;
+	u_int    bar;
+	u_int    offset;
+	u_int    phs_address;
+	u_int    phs_end;
+	u_int    phs_flag;
+	u_int    reserved;
+};
+typedef struct device_phys_address device_phys_address;
+
 /* Use 'o' as magic number */
 #define PCIEDOOCS_IOC                               '0'
 #define PCIE_GEN_IOC			       PCIEDOOCS_IOC
@@ -189,6 +240,7 @@ typedef struct device_i2c_rw device_i2c_rw;
 #define PCIEDEV_SET_IRQ                        _IOWR(PCIEDOOCS_IOC, 73, int)
 #define PCIEDEV_I2C_READ                     _IOWR(PCIEDOOCS_IOC, 74, int)
 #define PCIEDEV_I2C_WRITE                   _IOWR(PCIEDOOCS_IOC, 75, int)
+#define PCIEDEV_WRITE_DMA_P2P        _IOWR(PCIEDOOCS_IOC, 76, int)
 #define PCIEDEV_UDRIVER_VERSION      _IOWR(PCIEDOOCS_IOC, 78, int)
 #define PCIEDEV_GET_SWAP                   _IOWR(PCIEDOOCS_IOC, 79, int)
 
@@ -199,12 +251,15 @@ typedef struct device_i2c_rw device_i2c_rw;
 #define PCIEDEV_SET_REGISTER_SIZE	  _IOWR(PCIE_GEN_IOC, 83, int)
 #define PCIEDEV_GET_REGISTER_SIZE	  _IO(PCIE_GEN_IOC, 84)
 
+#define PCIEDEV_GET_SHAPI_DEVINFO	  _IOWR(PCIE_GEN_IOC, 85, int)
+#define PCIEDEV_GET_SHAPI_MODINFO	  _IOWR(PCIE_GEN_IOC, 86, int)
+
 #define PCIEDOOCS_IOC_MINNR  60
 #define PCIEDOOCS_IOC_MAXNR 100
 
 #define PCIEDEV_IOC_COMMON_MINNR  70
-#define PCIEDEV_IOC_COMMON_MAXNR 75
+#define PCIEDEV_IOC_COMMON_MAXNR 77
 #define PCIEDOOCS_IOC_DMA_MINNR  70
-#define PCIEDOOCS_IOC_DMA_MAXNR 75
+#define PCIEDOOCS_IOC_DMA_MAXNR 77
 
 #endif

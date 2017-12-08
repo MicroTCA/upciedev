@@ -28,9 +28,11 @@
 #define	_NOT_LOCK_OWNER__			-5
 #define	_NOT_IMPLEMENTED_			-6
 
+
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/pid.h>
+
 
 #ifdef USE_SEMAPHORE
 #include <linux/semaphore.h>

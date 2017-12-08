@@ -29,6 +29,11 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 	u8                  tmp_data_8;
 	u16                tmp_data_16;
 	u32                tmp_data_32;
+	
+	picmg_shapi_device_info      shapi_dev_info;
+	picmg_shapi_module_info    shapi_mod_info;
+	struct shapi_module_info  *tmp_prj_info_list; 
+	struct list_head *pos;
 
 	device_ioc_rw  aIocRW;
 	device_vector_rw	aVectorRW;
@@ -262,26 +267,33 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			retval = 0;
 
 			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
-			//ALERTCT("!!!!!!!!!!!!!!!! VECTOR READ NUM_READS %i\n", nMaxNumRW);
-/*
-			for (i = 0; (i < nMaxNumRW) && (!copy_from_user(&aIocRW, pUserRWdata, unSizeOfRW)); ++i, 
-					                                                                       pUserRWdata += sizeof(device_ioc_rw))
-*/
+
 			for (i = 0; (i < nMaxNumRW) && (!copy_from_user(&aIocRW, pUserRWdata, unSizeOfRW)); ++i, 
 					                                                                       pUserRWdata += 1)
 			{
 				CORRECT_REGISTER_SIZE(aIocRW.register_size, dev->register_size);
 				if (aIocRW.rw_access_mode<MTCA_SIMPLE_WRITE)
 				{
-					//ALERTCT("!!!!!! VECTOR READ NUM %i, REG_SIZE %i BAR%i COUNT %i\n", 
-							//i, aIocRW.register_size, aIocRW.barx_rw, aIocRW.count_rw);
-					retval += pciedev_read_inline(dev, aIocRW.register_size, aIocRW.rw_access_mode,
-						aIocRW.barx_rw,aIocRW.offset_rw, (char*)aIocRW.dataPtr, aIocRW.count_rw);
+					
+				retval += pciedev_read_inline(dev, aIocRW.register_size, aIocRW.rw_access_mode,
+				      aIocRW.barx_rw,aIocRW.offset_rw, (char*)aIocRW.dataPtr, aIocRW.count_rw);
 				}
 				else
 				{
-					retval += pciedev_write_inline(dev, aIocRW.register_size, aIocRW.rw_access_mode, aIocRW.barx_rw, 
-					     aIocRW.offset_rw,(const char*)aIocRW.dataPtr, (const char*)aIocRW.maskPtr, aIocRW.count_rw);
+					/*
+					ALERTCT("###Vector Write Mode %i BAR %i Offset %i Count %i\n",
+                                    	     aIocRW.register_size, aIocRW.barx_rw, aIocRW.offset_rw,
+				 	     aIocRW.count_rw);
+                                        
+                                        for(i = 0; i < 10; i++){
+						ALERTCT("###DATA %X\n", (int)*(((int*)aIocRW.dataPtr) + i));
+					}
+					*/
+
+					retval += pciedev_write_inline(dev, aIocRW.register_size,
+                                                           aIocRW.rw_access_mode, aIocRW.barx_rw, 
+					            aIocRW.offset_rw,(const char*)aIocRW.dataPtr, 
+                                                    (const char*)aIocRW.maskPtr, aIocRW.count_rw);
 				}
 			}
 			LeaveCritRegion(&dev->dev_mut);
@@ -321,7 +333,80 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 					aIocRW.offset_rw, (const char*)aIocRW.dataPtr, (const char*)aIocRW.maskPtr, aIocRW.count_rw);
 				LeaveCritRegion(&dev->dev_mut);
 			}
-			break;	
+			break;
+		case PCIEDEV_GET_SHAPI_DEVINFO: //picmg_shapi_device_info      shapi_dev_info;
+			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+			retval = 0;
+			
+			shapi_dev_info.SHAPI_VERSION = dev->device_info_list.SHAPI_VERSION;
+			shapi_dev_info.SHAPI_FIRST_MODULE_ADDRESS = dev->device_info_list.SHAPI_FIRST_MODULE_ADDRESS;
+			shapi_dev_info.SHAPI_HW_IDS = dev->device_info_list.SHAPI_FW_IDS; 
+			shapi_dev_info.SHAPI_FW_IDS  = dev->device_info_list.SHAPI_FW_IDS;
+			shapi_dev_info.SHAPI_FW_VERSION  = dev->device_info_list.SHAPI_FW_VERSION;
+			shapi_dev_info.SHAPI_FW_TIMESTAMP  = dev->device_info_list.SHAPI_FW_TIMESTAMP;
+			shapi_dev_info.SHAPI_FW_NAME[0] = dev->device_info_list.SHAPI_FW_NAME[0];
+			shapi_dev_info.SHAPI_FW_NAME[1] = dev->device_info_list.SHAPI_FW_NAME[1];
+			shapi_dev_info.SHAPI_FW_NAME[2] == dev->device_info_list.SHAPI_FW_NAME[2];
+			shapi_dev_info.SHAPI_DEVICE_CAP = dev->device_info_list.SHAPI_DEVICE_CAP;
+			shapi_dev_info.SHAPI_DEVICE_STATUS = dev->device_info_list.SHAPI_DEVICE_STATUS; 
+			shapi_dev_info.SHAPI_DEVICE_CONTROL  = dev->device_info_list.SHAPI_DEVICE_CONTROL;
+			shapi_dev_info.SHAPI_IRQ_MASK  = dev->device_info_list.SHAPI_IRQ_MASK;
+			shapi_dev_info.SHAPI_IRQ_FLAG  = dev->device_info_list.SHAPI_IRQ_FLAG;
+			shapi_dev_info.SHAPI_IRQ_ACTIVE = dev->device_info_list.SHAPI_IRQ_ACTIVE;
+			shapi_dev_info.SHAPI_SCRATCH_REGISTER = dev->device_info_list.SHAPI_SCRATCH_REGISTER;
+			strncpy(shapi_dev_info.fw_name, dev->device_info_list.fw_name, 13);
+			shapi_dev_info.number_of_modules = dev->shapi_module_num;
+			
+			if (copy_to_user((picmg_shapi_device_info*)arg, &shapi_dev_info, (size_t)sizeof(picmg_shapi_device_info))) {
+				retval = -EFAULT;
+				LeaveCritRegion(&dev->dev_mut);
+			return retval;
+			}
+			LeaveCritRegion(&dev->dev_mut);
+			break;
+
+		case PCIEDEV_GET_SHAPI_MODINFO: //picmg_shapi_module_info    shapi_module_info;
+			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+			retval = 0;
+			if (copy_from_user(&shapi_mod_info, (picmg_shapi_module_info*)arg, (size_t)sizeof(picmg_shapi_module_info))) {
+				retval = -EFAULT;
+				LeaveCritRegion(&dev->dev_mut);
+				return retval;
+			}
+			tmp_offset   = shapi_mod_info.module_num;
+			printk(KERN_INFO "PCIEDEV_GET_SHAPI_MODINFO:: MOD_NUM %i\n",  tmp_offset);
+			list_for_each(pos,  &dev->module_info_list.module_list ){
+				tmp_prj_info_list = list_entry(pos, struct shapi_module_info, module_list);
+				if(tmp_prj_info_list->module_num == tmp_offset){
+					printk(KERN_INFO "PCIEDEV_GET_SHAPI_MODINFO:: SHAPI MOD_NUM %i\n",  tmp_prj_info_list->module_num);
+					shapi_mod_info.SHAPI_VERSION = tmp_prj_info_list->SHAPI_VERSION;
+					shapi_mod_info.SHAPI_NEXT_MODULE_ADDRESS = tmp_prj_info_list->SHAPI_NEXT_MODULE_ADDRESS;
+					shapi_mod_info.SHAPI_MODULE_FW_IDS = tmp_prj_info_list->SHAPI_MODULE_FW_IDS; 
+					shapi_mod_info.SHAPI_MODULE_VERSION  = tmp_prj_info_list->SHAPI_MODULE_VERSION;
+					shapi_mod_info.SHAPI_MODULE_NAME[0] = tmp_prj_info_list->SHAPI_MODULE_NAME[0];
+					shapi_mod_info.SHAPI_MODULE_NAME[1] = tmp_prj_info_list->SHAPI_MODULE_NAME[1];
+					shapi_mod_info.SHAPI_MODULE_CAP = tmp_prj_info_list->SHAPI_MODULE_CAP ;
+					shapi_mod_info.SHAPI_MODULE_STATUS = tmp_prj_info_list->SHAPI_MODULE_STATUS;
+					shapi_mod_info.SHAPI_MODULE_CONTROL = tmp_prj_info_list->SHAPI_MODULE_CONTROL; 
+					shapi_mod_info.SHAPI_IRQ_ID  = tmp_prj_info_list->SHAPI_IRQ_ID;
+					shapi_mod_info.SHAPI_IRQ_FLAG_CLEAR  = tmp_prj_info_list->SHAPI_IRQ_FLAG_CLEAR;
+					shapi_mod_info.SHAPI_IRQ_MASK  = tmp_prj_info_list->SHAPI_IRQ_MASK;
+					shapi_mod_info.SHAPI_IRQ_FLAG = tmp_prj_info_list->SHAPI_IRQ_FLAG;
+					shapi_mod_info.SHAPI_IRQ_ACTIVE = tmp_prj_info_list->SHAPI_IRQ_ACTIVE;
+					strncpy(shapi_mod_info.module_name, tmp_prj_info_list->module_name, 9);
+					printk(KERN_INFO "PCIEDEV_GET_SHAPI_MODINFO:: SHAPI DEV_INFO NAME %s\n",  
+					                    shapi_mod_info.module_name, tmp_prj_info_list->module_name);
+					shapi_mod_info.module_num = tmp_offset ;
+				}
+			}
+			
+			if (copy_to_user((picmg_shapi_module_info*)arg, &shapi_mod_info, (size_t)sizeof(picmg_shapi_module_info))) {
+				retval = -EFAULT;
+				LeaveCritRegion(&dev->dev_mut);
+			return retval;
+			}
+			LeaveCritRegion(&dev->dev_mut);
+			break;
 			
 		default:
 			return -ENOTTY;

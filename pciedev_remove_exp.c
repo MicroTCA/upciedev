@@ -4,6 +4,8 @@
 
 #include "pciedev_ufn.h"
 
+extern struct upciedev_base_dev base_upciedev_dev;
+
 int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char *dev_name, int * brd_num)
 {
      pciedev_dev                *pciedevdev;
@@ -14,6 +16,7 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
      char                prc_entr[64];
      int                   i;
      int                   nLock = 1;
+     int                   d = 0;
      
      struct list_head *pos;
      struct list_head *npos;
@@ -47,8 +50,12 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
     printk(KERN_ALERT "REMOVING IRQ_MODE %d\n", pciedevdev->irq_mode);
     if(pciedevdev->irq_mode){
        printk(KERN_ALERT "FREE IRQ\n");
-       free_irq(pciedevdev->pci_dev_irq, pciedevdev);
-       printk(KERN_ALERT "REMOVING IRQ\n");
+       for(i = 0; i < 32; ++i){
+		    if((pciedevdev->enbl_irq_num >> i)&0x1){
+				free_irq(pciedevdev->pci_dev_irq + i, pciedevdev);
+				printk(KERN_ALERT "REMOVING IRQ NUM %i:%i\n", i, pciedevdev->pci_dev_irq + i);
+		   }
+       }
        if(pciedevdev->msi){
            printk(KERN_ALERT "DISABLE MSI\n");
            pci_disable_msi((pciedevdev->pciedev_pci_dev));
@@ -59,6 +66,12 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
            pci_disable_msi((pciedevdev->pciedev_pci_dev));
        }
     }
+	pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_num = 0;
+	for(d = 0; d < NUMBER_OF_BARS; ++d){
+		pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[d].res_start = 0;
+		pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[d].res_end = 0;
+		pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[d].res_flag = 0;
+	}
      
     printk(KERN_ALERT "REMOVE: UNMAPPING MEMORYs\n");
     //mutex_lock(&pciedevdev->dev_mut);

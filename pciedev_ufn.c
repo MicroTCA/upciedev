@@ -7,15 +7,21 @@
 
 #include "pciedev_ufn.h"
 
+struct upciedev_base_dev base_upciedev_dev;
+struct upciedev_base_dev *p_base_upciedev_dev = &base_upciedev_dev;
+EXPORT_SYMBOL(p_base_upciedev_dev);
+
 struct vm_operations_struct upciedev_remap_vm_ops = {
 	.open =  upciedev_vma_open,
 	.close = upciedev_vma_close,
 };
 
+//int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, char *dev_name, upciedev_base_dev * b_dev)
 int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operations *pciedev_fops, char *dev_name)
 {
 	int                    i          = 0;
 	int                    k         = 0;
+	int                    d         = 0;
 	int                    result  = 0;
 	int                    devno  = 0;
 	dev_t                devt     = 0;
@@ -87,6 +93,7 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 		return 1;
 	}
 	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->prj_info_list.prj_list));
+	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->module_info_list.module_list));
 	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.node_file_list));
 	//mutex_init(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut));
 	InitCritRegionLock(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut), _DEFAULT_TIMEOUT_);
@@ -100,13 +107,44 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	pciedev_cdev_p->pciedev_dev_m[i]->binded                   = 0;
 	pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.file_cnt = 0;
 	pciedev_cdev_p->pciedev_dev_m[i]->null_dev                   = 0;
+	printk(KERN_ALERT "INIT ADD PARENT BASE\n");
+	//pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = b_dev;
+	pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = p_base_upciedev_dev;
+	
+	
 
 	if(i == PCIEDEV_NR_DEVS){
 		pciedev_cdev_p->pciedev_dev_m[i]->binded        = 1;
 		pciedev_cdev_p->pciedev_dev_m[i]->null_dev      = 1;
 	}
     }
-     
+	
+/*
+	for(i = 0; i < NUMBER_OF_SLOTS + 1; ++i){
+		printk(KERN_ALERT "INIT CLEAR PARENT BASE SLOT %i\n", i);
+		//b_dev->dev_phys_addresses[i].slot_num = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_num = 0;
+
+		for(d = 0; d < NUMBER_OF_BARS; ++d){
+			printk(KERN_ALERT "INIT CLEAR PARENT BASE BAR %i\n", d);
+
+			//b_dev->dev_phys_addresses[i].bars[d].res_start = 0;
+			//b_dev->dev_phys_addresses[i].bars[d].res_end = 0;
+			//b_dev->dev_phys_addresses[i].bars[d].res_flag = 0;
+			//b_dev->UPCIEDEV_VER_MAJ = pciedev_cdev_p->PCIEDEV_DRV_VER_MAJ;
+			//b_dev->UPCIEDEV_VER_MIN = pciedev_cdev_p->PCIEDEV_DRV_VER_MIN;
+
+
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[d].res_start = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[d].res_end = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[d].res_flag = 0;
+			p_base_upciedev_dev->UPCIEDEV_VER_MAJ = pciedev_cdev_p->PCIEDEV_DRV_VER_MAJ;
+			p_base_upciedev_dev->UPCIEDEV_VER_MIN = pciedev_cdev_p->PCIEDEV_DRV_VER_MIN;
+		}
+	}
+*/
+	
+	
     return result; /* succeed */
 }
 EXPORT_SYMBOL(upciedev_init_module_exp);
@@ -243,7 +281,45 @@ void*   pciedev_get_baraddress(int br_num, struct pciedev_dev  *dev)
 }
 EXPORT_SYMBOL(pciedev_get_baraddress);
 
-
+u_int  pciedev_get_physical_address(struct pciedev_dev *dev, device_phys_address *slotdev)
+{
+	int i = 0;
+	u_int slotnm = 0;
+	u_int slotbar = 0;
+	u_int phaddress = 0;
+	
+	slotnm    = slotdev->slot;
+	slotbar    = slotdev->bar;
+	
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i BAR %i\n", slotnm, slotbar);
+	if(!slotnm){
+		return -1;
+	}
+	
+/*
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i \n", slotnm);
+	phaddress = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_start;
+	slotdev->phs_address = phaddress;
+	slotdev->phs_end = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_end;
+	slotdev->phs_flag = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_flag;
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i START %X\n", slotdev->phs_address, i);
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i STOP %X\n", slotdev->phs_end , i);
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i FLAG %X\n", slotdev->phs_flag , i);
+*/
+	
+	
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i \n", slotnm);
+	phaddress = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_start;
+	slotdev->phs_address = phaddress;
+	slotdev->phs_end = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_end;
+	slotdev->phs_flag = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_flag;
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: START %X\n", slotdev->phs_address);
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: STOP %X\n", slotdev->phs_end );
+	printk(KERN_NOTICE "GET_PHYS_ADDRESS: FLAG %X\n", slotdev->phs_flag );
+	
+	return phaddress;
+}
+EXPORT_SYMBOL(pciedev_get_physical_address);
 
 void upciedev_vma_open(struct vm_area_struct *vma)
 {
@@ -302,23 +378,30 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 EXPORT_SYMBOL(pciedev_remap_mmap_exp);
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *),struct pciedev_dev  *pdev, char  *dev_name)
+int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *),struct pciedev_dev  *pdev, char  *dev_name, int num )
 #else
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev  *pdev, char  *dev_name)
+int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev  *pdev, char  *dev_name, int num )
 #endif
 {
     int result = 0;
+    u32 irqnum = 0;
+    
+    irqnum = pdev->pci_dev_irq + num;
     
     /*******SETUP INTERRUPTS******/
     pdev->irq_mode = 1;
-    result = request_irq(pdev->pci_dev_irq, pciedev_interrupt,
+    //result = request_irq(pdev->pci_dev_irq, pciedev_interrupt,
+    //                    pdev->irq_flag, dev_name, pdev);
+     result = request_irq(irqnum, pciedev_interrupt,
                         pdev->irq_flag, dev_name, pdev);
-    printk(KERN_INFO "PCIEDEV_PROBE:  assigned IRQ %i RESULT %i\n",
-               pdev->pci_dev_irq, result);
+    printk(KERN_INFO "PCIEDEV_PROBE:  assigned IRQ %i RESULT %i\n", irqnum, result);
     if (result) {
-         printk(KERN_INFO "PCIEDEV_PROBE: can't get assigned irq %i\n", pdev->pci_dev_irq);
+         printk(KERN_INFO "PCIEDEV_PROBE: can't get assigned irq %i\n", irqnum);
          pdev->irq_mode = 0;
-    }
+    }else{
+			pdev->enbl_irq_num = pdev->enbl_irq_num | 1<<num;
+			printk(KERN_INFO "PCIEDEV_PROBE:  assigned IRQ %i ALL %i\n", irqnum, pdev->enbl_irq_num );
+	}
     return result;
 }
 EXPORT_SYMBOL(pciedev_setup_interrupt);
@@ -329,12 +412,18 @@ int      pciedev_get_brdinfo(struct pciedev_dev  *bdev)
     void *address;
     int    strbrd = 0;
     u32  tmp_data_32;
+    int i = 0;
+    int k = 0;
+    int ach = 0;
     
     bdev->startup_brd = 0;
+    bdev->shapi_brd     = 0;
+    bdev->shapi_module_num = 0;
     if(bdev->memmory_base[0]){ 
         baddress = bdev->memmory_base[0];
         address = baddress;
         tmp_data_32       = ioread32(address );
+        printk(KERN_INFO "GET_BRD_INFO MAGIC %X\n", tmp_data_32);
         if(tmp_data_32 == ASCII_BOARD_MAGIC_NUM || tmp_data_32 ==ASCII_BOARD_MAGIC_NUM_L){
             bdev->startup_brd = 1;
             address = baddress + WORD_BOARD_ID;
@@ -357,10 +446,147 @@ int      pciedev_get_brdinfo(struct pciedev_dev  *bdev)
             address = baddress + WORD_BOARD_TO_PROJ;
             tmp_data_32       = ioread32(address );
             bdev->brd_info_list.PCIEDEV_PROJ_NEXT = tmp_data_32;
-        }
+	  
+	  strbrd = bdev->startup_brd;
+        }else{
+			
+		if((tmp_data_32 >> 16) == SHAPI_MAGIC_DEVICE_NUM ){
+				bdev->startup_brd = 0;
+				bdev->shapi_brd     = 1;
+				address = baddress + WORD_DEVICE_VERSION;
+				tmp_data_32       = ioread32(address);
+				bdev->device_info_list.SHAPI_VERSION = tmp_data_32 & 0xFFFF;
+
+				address = baddress + WORD_FIRST_MODULE_ADDRESS;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FIRST_MODULE_ADDRESS = tmp_data_32;
+				if (tmp_data_32) bdev->shapi_module_num = 1;
+				
+				address = baddress + WORD_HW_IDS;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_HW_IDS = tmp_data_32;
+				
+				address = baddress + WORD_FW_IDS;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_IDS = tmp_data_32;
+				
+				address = baddress + WORD_FW_VERSION;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_VERSION = tmp_data_32;
+				
+				address = baddress + WORD_FW_TIMESTAMP;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_TIMESTAMP = tmp_data_32;
+				
+				address = baddress + WORD_DEVICE_CAP;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_DEVICE_CAP = tmp_data_32;
+				
+				address = baddress + WORD_DEVICE_STATUS;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_DEVICE_STATUS = tmp_data_32;
+				
+				address = baddress + WORD_DEVICE_CONTROL;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_DEVICE_CONTROL = tmp_data_32;
+				
+				address = baddress + WORD_IRQ_MASK;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_IRQ_MASK = tmp_data_32;
+				
+				address = baddress + WORD_IRQ_FLAG;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_IRQ_FLAG = tmp_data_32;
+				
+				address = baddress + WORD_IRQ_ACTIVE;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_IRQ_ACTIVE = tmp_data_32;
+				
+				address = baddress + WORD_SCRATCH_REGISTER;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_SCRATCH_REGISTER = tmp_data_32;
+				
+				//setting scratch registers
+				bdev->scratch_bar = 0;
+				bdev->scratch_offset = WORD_SCRATCH_REGISTER;
+
+				for(k = 0; k <=8; k+=4){
+					address = baddress + WORD_FW_NAME + k;
+					tmp_data_32       = ioread32(address );
+					bdev->device_info_list.SHAPI_FW_NAME[k/4] = tmp_data_32;
+					for(i = 0; i < 4; ++i){
+						ach = (tmp_data_32 >> (3-i)*8) & 0xFF;
+						if(ach == 0x20){
+							bdev->device_info_list.fw_name[i + k] ='\0';
+							break;
+						}
+						if(ach == 0){
+							bdev->device_info_list.fw_name[i + k] ='\0';
+							break;
+						}
+						bdev->device_info_list.fw_name[i + k] =ach;
+						printk(KERN_INFO "SHAPI DEV_INFO %X : %s\n", ach, bdev->device_info_list.fw_name);
+					}
+					
+				}
+				/*
+				address = baddress + WORD_FW_NAME;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_NAME0 = tmp_data_32;
+				for(i = 0; i < 4; ++i){
+					ach = (tmp_data_32 >> (3-i)*8) & 0xFF;
+					if(ach == 0x20){
+						bdev->device_info_list.fw_name[i] ='\0';
+						break;
+					}
+					if(ach == 0){
+						bdev->device_info_list.fw_name[i] ='\0';
+						break;
+					}
+					bdev->device_info_list.fw_name[i] =ach;
+					printk(KERN_INFO "SHAPI DEV_INFO %X : %s\n", ach, bdev->device_info_list.fw_name);
+				}
+				 
+				k +=4;
+				address = baddress + WORD_FW_NAME +4;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_NAME1 = tmp_data_32;
+				for(i = 0; i < 4; ++i){
+					ach = (tmp_data_32 >> (3-i)*8) & 0xFF;
+					if(ach == 0x20){
+						bdev->device_info_list.fw_name[i + k] ='\0';
+						break;
+					}
+					if(ach == 0){
+						bdev->device_info_list.fw_name[i + k] ='\0';
+						break;
+					}
+					bdev->device_info_list.fw_name[i + k] =ach;
+					printk(KERN_INFO "SHAPI DEV_INFO %X : %s\n", ach, bdev->device_info_list.fw_name);
+				}
+				k +=4;
+				address = baddress + WORD_FW_NAME + 8;
+				tmp_data_32       = ioread32(address );
+				bdev->device_info_list.SHAPI_FW_NAME2 = tmp_data_32;
+				for(i = 0; i < 4; ++i){
+					ach = (tmp_data_32 >> (3-i)*8) & 0xFF;
+					if(ach == 0x20){
+						bdev->device_info_list.fw_name[i + k] ='\0';
+						break;
+					}
+					if(ach == 0){
+						bdev->device_info_list.fw_name[i + k] ='\0';
+						break;
+					}
+					bdev->device_info_list.fw_name[i + k] =ach;
+					printk(KERN_INFO "SHAPI DEV_INFO %X : %s\n", ach, bdev->device_info_list.fw_name);
+				}
+				 */
+				printk(KERN_INFO "SHAPI DEV_INFO NAME %s\n",  bdev->device_info_list.fw_name);
+				strbrd = 2;
+			}	
+		}
     }
-    
-    strbrd = bdev->startup_brd;
 
     return strbrd;
 }
@@ -368,43 +594,43 @@ EXPORT_SYMBOL(pciedev_get_brdinfo);
 
 int   pciedev_fill_prj_info(struct pciedev_dev  *bdev, void  *baradress)
 {
-    void *address;
-    int    strbrd  = 0;
-    u32  tmp_data_32;
-     struct pciedev_prj_info  *tmp_prj_info_list; 
-    
-    address           = baradress;
-    tmp_data_32  = ioread32(address );
-    if(tmp_data_32 == ASCII_PROJ_MAGIC_NUM ){
-        bdev->startup_prj_num++;
-        tmp_prj_info_list = kzalloc(sizeof(pciedev_prj_info), GFP_KERNEL);
-        
-        address = baradress + WORD_PROJ_ID;
-        tmp_data_32       = ioread32(address);
-       tmp_prj_info_list->PCIEDEV_PROJ_ID = tmp_data_32;
+	void *address;
+	int    strbrd  = 0;
+	u32  tmp_data_32;
+	 struct pciedev_prj_info  *tmp_prj_info_list; 
 
-        address = baradress + WORD_PROJ_VERSION;
-        tmp_data_32       = ioread32(address );
-       tmp_prj_info_list->PCIEDEV_PROJ_VERSION = tmp_data_32;
+	address           = baradress;
+	tmp_data_32  = ioread32(address );
+	if(tmp_data_32 == ASCII_PROJ_MAGIC_NUM ){
+		bdev->startup_prj_num++;
+		tmp_prj_info_list = kzalloc(sizeof(pciedev_prj_info), GFP_KERNEL);
 
-        address = baradress + WORD_PROJ_DATE;
-        tmp_data_32       = ioread32(address );
-       tmp_prj_info_list->PCIEDEV_PROJ_DATE = tmp_data_32;
+		address = baradress + WORD_PROJ_ID;
+		tmp_data_32       = ioread32(address);
+		tmp_prj_info_list->PCIEDEV_PROJ_ID = tmp_data_32;
 
-        address = baradress + WORD_PROJ_RESERVED;
-        tmp_data_32       = ioread32(address );
-       tmp_prj_info_list->PCIEDEV_PROJ_RESERVED = tmp_data_32;
+		address = baradress + WORD_PROJ_VERSION;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->PCIEDEV_PROJ_VERSION = tmp_data_32;
 
-        bdev->brd_info_list.PCIEDEV_PROJ_NEXT = 0;
-        address = baradress + WORD_PROJ_NEXT;
-        tmp_data_32       = ioread32(address );
-       tmp_prj_info_list->PCIEDEV_PROJ_NEXT = tmp_data_32;
+		address = baradress + WORD_PROJ_DATE;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->PCIEDEV_PROJ_DATE = tmp_data_32;
 
-        list_add(&(tmp_prj_info_list->prj_list), &(bdev->prj_info_list.prj_list));
-        strbrd= tmp_data_32;
-    }
-    
-    return strbrd;
+		address = baradress + WORD_PROJ_RESERVED;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->PCIEDEV_PROJ_RESERVED = tmp_data_32;
+
+		bdev->brd_info_list.PCIEDEV_PROJ_NEXT = 0;
+		address = baradress + WORD_PROJ_NEXT;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->PCIEDEV_PROJ_NEXT = tmp_data_32;
+
+		list_add(&(tmp_prj_info_list->prj_list), &(bdev->prj_info_list.prj_list));
+		strbrd= tmp_data_32;
+	}
+
+	return strbrd;
 }
 EXPORT_SYMBOL(pciedev_fill_prj_info);
 
@@ -443,6 +669,148 @@ int      pciedev_get_prjinfo(struct pciedev_dev  *bdev)
     return strbrd;
 }
 EXPORT_SYMBOL(pciedev_get_prjinfo);
+
+int       pciedev_fill_shapi_module__info(struct pciedev_dev  *bdev, void  *baradress)
+{
+	void *address;
+	int    strbrd  = 0;
+	u32  tmp_data_32;
+	struct shapi_module_info  *tmp_prj_info_list; 
+	int i = 0;
+	int k = 0;
+	int ach = 0;
+	struct list_head *pos;
+
+	address           = baradress;
+	tmp_data_32  = ioread32(address );
+	printk(KERN_INFO "SHAPI FILL_MODULE_INFO BADDR %X MAGIC %X\n",  address, tmp_data_32);
+	if((tmp_data_32 >> 16) == SHAPI_MAGIC_MODULE_NUM ){
+		bdev->shapi_module_num++;
+		tmp_prj_info_list = kzalloc(sizeof(shapi_module_info), GFP_KERNEL);
+		tmp_prj_info_list->module_num = bdev->shapi_module_num;
+
+		address = baradress + WORD_MODULE_SHAPI_VERSION;
+		tmp_data_32       = ioread32(address);
+		tmp_prj_info_list->SHAPI_VERSION = tmp_data_32 & 0xFFFF;
+
+        address = baradress + WORD_MODULE_IDS;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_MODULE_FW_IDS = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_VERSION;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_MODULE_VERSION = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_CAP;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_MODULE_CAP = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_STATUS;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_MODULE_STATUS = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_CONTROL;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_MODULE_CONTROL = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_IRQ_ID;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_IRQ_ID = tmp_data_32;
+		bdev->device_irq_num = bdev->device_irq_num | tmp_data_32;
+		printk(KERN_INFO "SHAPI FILL_MODULE_INFO DEV_IRQs %X MODULE IRQs %X\n",  bdev->device_irq_num, tmp_data_32);
+		
+		address = baradress + WORD_MODULE_IRQ_CLEAR;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_IRQ_FLAG_CLEAR = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_IRQ_MASK;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_IRQ_MASK = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_IRQ_FLAG;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_IRQ_FLAG = tmp_data_32;
+		
+		address = baradress + WORD_MODULE_IRQ_ACTIVE;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_IRQ_ACTIVE = tmp_data_32;
+		
+		
+		for(k = 0; k <=4; k+=4){
+			address = baradress + WORD_MODULE_NAME + k;
+			tmp_data_32       = ioread32(address );
+			tmp_prj_info_list->SHAPI_MODULE_NAME[k/4] = tmp_data_32;
+			for(i = 0; i < 4; ++i){
+				ach = (tmp_data_32 >> (3-i)*8) & 0xFF;
+				if(ach == 0x20){
+					tmp_prj_info_list->module_name[i + k] ='\0';
+					break;
+				}
+				if(ach == 0){
+					tmp_prj_info_list->module_name[i + k] ='\0';
+					break;
+				}
+				tmp_prj_info_list->module_name[i + k] =ach;
+				printk(KERN_INFO "SHAPI MODULE_INFO %X : %s\n", ach, tmp_prj_info_list->module_name);
+			}
+		}
+
+	    address = baradress + WORD_NEXT_MODULE_ADDRESS;
+		tmp_data_32       = ioread32(address );
+		tmp_prj_info_list->SHAPI_NEXT_MODULE_ADDRESS = tmp_data_32;
+
+		list_add(&(tmp_prj_info_list->module_list), &(bdev->module_info_list.module_list));
+		strbrd= tmp_data_32;
+	}
+	
+	
+	list_for_each(pos,  &bdev->module_info_list.module_list ){
+		tmp_prj_info_list = list_entry(pos, struct shapi_module_info, module_list);
+		printk(KERN_INFO "SHAPI MODULE_INFO NAME %s\n",  tmp_prj_info_list->module_name);
+		printk(KERN_INFO "SHAPI MODULE_INFO NUM %i\n",  tmp_prj_info_list->module_num);
+	}
+	return strbrd;
+}
+EXPORT_SYMBOL(pciedev_fill_shapi_module__info);
+
+int       pciedev_get_shapi_module_info(struct pciedev_dev  *bdev)
+{
+	void *baddress;
+	void *address;
+	int   strbrd             = 0;
+	int  tmp_next_prj  = 0;
+	int  tmp_next_prj1 = 0;
+	int  i = 1;
+
+	bdev->shapi_module_num = 0;
+	tmp_next_prj =bdev->device_info_list.SHAPI_FIRST_MODULE_ADDRESS;
+	if(tmp_next_prj){
+	baddress = bdev->memmory_base[0];
+	printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
+	while(tmp_next_prj){
+		address = baddress + tmp_next_prj;
+		tmp_next_prj = pciedev_fill_shapi_module__info(bdev, address);
+	}
+	}else{
+		for ( i = 1 ; i < NUMBER_OF_BARS; ++i){
+			if (bdev->memmory_base[i]){
+				tmp_next_prj = 1;
+				tmp_next_prj1 = 0;
+				baddress = bdev->memmory_base[i];
+				while (tmp_next_prj){
+					tmp_next_prj = tmp_next_prj1;
+					address = baddress + tmp_next_prj;
+					printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
+					tmp_next_prj = pciedev_fill_shapi_module__info(bdev, address);
+				} // while (tmp_next_prj)
+			} // if (bdev->memmory_base[i])
+		} // for ( ; i < NUMBER_OF_BARS; ++i)
+	}
+	strbrd = bdev->shapi_module_num;
+	return strbrd;
+}
+EXPORT_SYMBOL(pciedev_get_shapi_module_info);
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
     void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
@@ -623,7 +991,15 @@ EXPORT_SYMBOL(pciedev_get_prjinfo);
         cnt = strlen(m_str);
         printk(KERN_INFO "PCIEDEV_PROC_INFO: PROC LEN%i\n", cnt);
         //copy_to_user(buf, m_p, (size_t)cnt);
-        copy_to_user(buf, m_str, (size_t)cnt);
+		
+/*
+        #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
+		copy_to_user(buf, m_str, (size_t)cnt);
+	#else 
+	   copy_to_user(buf, m_str, (size_t)cnt);
+	#endif
+*/
+        copy_to_user(buf, m_str, (ssize_t)cnt);
         return cnt;
 }
 #endif

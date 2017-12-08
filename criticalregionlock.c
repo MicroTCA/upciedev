@@ -16,7 +16,21 @@
  *  This synchronization object is candidate to change mutex
  *
  */
+
+#include <linux/module.h>
+#include <linux/fs.h>	
+#include <linux/proc_fs.h>
+
+#include "pciedev_ufn.h"
+#include "pciedev_io.h"
 #include "criticalregionlock.h"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
+	#include <linux/sched/signal.h>
+#else 
+#endif
+
+
 
 #ifdef USE_SEMAPHORE
 

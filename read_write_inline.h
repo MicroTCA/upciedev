@@ -312,18 +312,19 @@ static inline ssize_t pciedev_write_inline(struct pciedev_dev* a_dev,
 		ERRCT("ERROR: memor_base[%u]=%p, offset=%u, registerSize=%u\n", a_bar, a_dev->memmory_base[a_bar], a_offset, unRegisterSize);
 		return -EFAULT;
 	}
-
+	
 	total_size_rw = a_dev->mem_base_end[a_bar] - a_dev->mem_base[a_bar];
 	size_after_offset_rw = (total_size_rw>a_offset) ? total_size_rw - a_offset : 0;
 	cnt_after_offset_rw = size_after_offset_rw / unRegisterSize;
 	a_count = a_count < cnt_after_offset_rw ? a_count : cnt_after_offset_rw;
 	addressDev = (char*)a_dev->memmory_base[a_bar] + a_offset;
-
+	
 	for (i = 0; i < a_count; ++i, pcUserData += unRegisterSize, pcUserMask += unRegisterSize, addressDev += unRegisterSize)
 	{
 		if (a_pcUserData0 && copy_from_user(&tmp_data_for_rw, pcUserData, unRegisterSize))break;
 		if (a_pcUserMask0 && copy_from_user(&tmp_mask_for_w, pcUserMask, unRegisterSize))break;
 		if (a_dev->swap) { tmp_data_for_rw = UPCIEDEV_SWAP_TOT(unRegisterSize, tmp_data_for_rw); tmp_mask_for_w = UPCIEDEV_SWAP_TOT(unRegisterSize, tmp_mask_for_w); }
+		
 		Read_Write_Private(a_register_size,a_rw_access_mode, addressDev, &tmp_data_for_rw, &tmp_mask_for_w,/*NULL*/&tmp_mask_for_w);
 		retval += unRegisterSize;
 	}

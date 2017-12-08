@@ -33,12 +33,15 @@
 #include <linux/fs.h>	
 #include <linux/proc_fs.h>
 #include <linux/mm.h>
+#include <linux/uaccess.h>
 #include "criticalregionlock.h"
 #include "pciedev_io.h"
 
 #ifndef NUMBER_OF_BARS
 #define NUMBER_OF_BARS 6
 #endif
+
+#define NUMBER_OF_SLOTS 12  
 
 #ifndef PCIEDEV_NR_DEVS
 #define PCIEDEV_NR_DEVS 15    /* pciedev0 through pciedev15 */
@@ -47,6 +50,9 @@
 #define ASCII_BOARD_MAGIC_NUM         0x424F5244 /*BORD*/
 #define ASCII_PROJ_MAGIC_NUM             0x50524F4A /*PROJ*/
 #define ASCII_BOARD_MAGIC_NUM_L      0x626F7264 /*bord*/
+
+#define SHAPI_MAGIC_DEVICE_NUM               0x00005348 /*SH*/
+#define SHAPI_MAGIC_MODULE_NUM             0x0000534D /*SMJ*/
 
 /*FPGA Standard Register Set*/
 #define WORD_BOARD_MAGIC_NUM      0x00
@@ -70,19 +76,62 @@
 #define WORD_PROJ_IRQ_FLAGS            0x08
 #define WORD_PROJ_IRQ_CLR_FLAGSE  0x0C
 
+//SHAPI DEVICE Registers
+#define WORD_DEVICE_VERSION			0x00
+#define WORD_FIRST_MODULE_ADDRESS            0x04
+#define WORD_HW_IDS                                               0x08
+#define WORD_FW_IDS                                               0x0C
+#define WORD_FW_VERSION                                    0x10
+#define WORD_FW_TIMESTAMP                               0x14
+#define WORD_FW_NAME                                          0x18
+#define WORD_DEVICE_CAP                                      0x24
+#define WORD_DEVICE_STATUS                               0x28
+#define WORD_DEVICE_CONTROL                           0x2C
+#define WORD_IRQ_MASK                                          0x30
+#define WORD_IRQ_FLAG                                           0x34
+#define WORD_IRQ_ACTIVE                                       0x38
+#define WORD_SCRATCH_REGISTER                      0x3C
+
+//SHAPI MODULE Registers
+#define WORD_MODULE_SHAPI_VERSION		0x00
+#define WORD_NEXT_MODULE_ADDRESS            0x04
+#define WORD_MODULE_IDS                                    0x08
+#define WORD_MODULE_VERSION                         0x0C
+#define WORD_MODULE_NAME                               0x10
+#define WORD_MODULE_CAP                                   0x18
+#define WORD_MODULE_STATUS                            0x1C
+#define WORD_MODULE_CONTROL                        0x20
+#define WORD_MODULE_IRQ_ID                              0x24
+#define WORD_MODULE_IRQ_CLEAR                     0x28
+#define WORD_MODULE_IRQ_MASK                       0x2C
+#define WORD_MODULE_IRQ_FLAG                        0x30
+#define WORD_MODULE_IRQ_ACTIVE                    0x34
+
 #define PCIED_FPOS  7
 
 #define	_PROC_ENTRY_CREATED		0
 #define	_DEVC_ENTRY_CREATED		1
 #define	_MUTEX_CREATED			2
-//alloc_chrdev_region
-#define _CHAR_REG_ALLOCATED			3
-#define _CDEV_ADDED				4
-#define _PCI_DRV_REG				5
+#define      _CHAR_REG_ALLOCATED			3
+#define      _CDEV_ADDED				4
+#define      _PCI_DRV_REG				5
 #define	_IRQ_REQUEST_DONE			6
 #define	_PCI_DEVICE_ENABLED		7
 #define	_PCI_REGIONS_REQUESTED		8
 #define	_CREATED_ADDED_BY_USER		9
+
+struct upciedev_bar_address {
+    u32 res_start;
+    u32 res_end;
+    u32 res_flag;
+};
+typedef struct upciedev_bar_address  upciedev_bar_address ;
+
+struct upciedev_phys_address {
+    int      slot_num;
+    upciedev_bar_address  bars[NUMBER_OF_BARS];
+};
+typedef struct upciedev_phys_address upciedev_phys_address;
 
 struct upciedev_file_list {
     struct list_head node_file_list;
@@ -95,6 +144,7 @@ typedef struct upciedev_file_list upciedev_file_list;
 #define u32 unsigned
 #endif
 
+//DESY Register Set
 struct pciedev_brd_info {
     u32 PCIEDEV_BOARD_ID;
     u32 PCIEDEV_BOARD_VERSION;
@@ -114,6 +164,53 @@ struct pciedev_prj_info {
     u32 PCIEDEV_PROJ_NEXT  ;
 };
 typedef struct pciedev_prj_info pciedev_prj_info;
+
+//SHAPI PICMG Register Set
+struct shapi_device_info {
+    u32 SHAPI_VERSION;
+    u32 SHAPI_FIRST_MODULE_ADDRESS;
+    u32 SHAPI_HW_IDS ; 
+    u32 SHAPI_FW_IDS  ;
+    u32 SHAPI_FW_VERSION  ;
+    u32 SHAPI_FW_TIMESTAMP  ;
+    u32 SHAPI_FW_NAME[3];
+    u32 SHAPI_DEVICE_CAP;
+    u32 SHAPI_DEVICE_STATUS ; 
+    u32 SHAPI_DEVICE_CONTROL  ;
+    u32 SHAPI_IRQ_MASK  ;
+    u32 SHAPI_IRQ_FLAG  ;
+    u32 SHAPI_IRQ_ACTIVE;
+    u32 SHAPI_SCRATCH_REGISTER;
+    char fw_name[13];
+};
+typedef struct shapi_device_info shapi_device_info;
+
+struct shapi_module_info {
+    struct list_head module_list;
+    u32 SHAPI_VERSION;
+    u32 SHAPI_NEXT_MODULE_ADDRESS;
+    u32 SHAPI_MODULE_FW_IDS ; 
+    u32 SHAPI_MODULE_VERSION  ;
+    u32 SHAPI_MODULE_NAME[2] ;
+    u32 SHAPI_MODULE_CAP;
+    u32 SHAPI_MODULE_STATUS;
+    u32 SHAPI_MODULE_CONTROL ; 
+    u32 SHAPI_IRQ_ID  ;
+    u32 SHAPI_IRQ_FLAG_CLEAR  ;
+    u32 SHAPI_IRQ_MASK  ;
+    u32 SHAPI_IRQ_FLAG;
+    u32 SHAPI_IRQ_ACTIVE;
+    char module_name[9];
+    int module_num;
+};
+typedef struct shapi_module_info shapi_module_info;
+
+struct upciedev_base_dev {
+	u16 UPCIEDEV_VER_MAJ;
+	u16 UPCIEDEV_VER_MIN;
+	upciedev_phys_address dev_phys_addresses[NUMBER_OF_SLOTS];
+};
+typedef struct upciedev_base_dev upciedev_base_dev;
 
 struct pciedev_cdev ;
 struct pciedev_dev {
@@ -163,6 +260,7 @@ struct pciedev_dev {
 	u32                  mem_base_flag[NUMBER_OF_BARS];
 	loff_t                rw_off[NUMBER_OF_BARS];
 	void __iomem*  memmory_base[NUMBER_OF_BARS];
+	
 	/******************************************************/
     
 	int      dev_dma_64mask;
@@ -173,19 +271,28 @@ struct pciedev_dev {
 	u32    scratch_offset;
 
 	u8                         msi;
+	int                         msi_num;
 	int                         irq_flag;
 	u16                       irq_mode;
 	u8                         irq_line;
 	u8                         irq_pin;
 	u32                       pci_dev_irq;
+	u32                       enbl_irq_num;
+	u32                       device_irq_num;
 
-	struct pciedev_cdev *parent_dev;
+	struct pciedev_cdev            *parent_dev;
+	struct upciedev_base_dev  *parent_base_dev;
 	void                          *dev_str;
     
 	struct pciedev_brd_info brd_info_list;
 	struct pciedev_prj_info  prj_info_list;
 	int                                 startup_brd;
 	int                                 startup_prj_num;
+	
+	struct shapi_device_info device_info_list;
+	struct shapi_module_info module_info_list;
+	int                                 shapi_brd;
+	int                                 shapi_module_num;
 };
 typedef struct pciedev_dev pciedev_dev;
 
@@ -206,6 +313,7 @@ typedef struct pciedev_cdev pciedev_cdev;
 
 
 void     upciedev_cleanup_module_exp(pciedev_cdev **);
+//int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, char *, upciedev_base_dev *);
 int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, char *);
 
 int       pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, char *, int * );
@@ -226,6 +334,11 @@ void*    pciedev_get_baraddress(int, struct pciedev_dev *);
 int       pciedev_get_prjinfo(struct pciedev_dev *);
 int       pciedev_fill_prj_info(struct pciedev_dev *, void *);
 int       pciedev_get_brdinfo(struct pciedev_dev *);
+
+int       pciedev_get_shapi_module_info(struct pciedev_dev *);
+int       pciedev_fill_shapi_module__info(struct pciedev_dev *, void *);
+
+u_int  pciedev_get_physical_address(struct pciedev_dev *, device_phys_address *);
 
 //adding mmap staff
 /* The mmap system call declared as:
@@ -253,9 +366,9 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma);
 
 
 #if LINUX_VERSION_CODE < 0x20613 // irq_handler_t has changed in 2.6.19
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *);
+int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struct pt_regs *), struct pciedev_dev *, char *, int);
 #else
-int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev *, char *);
+int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev *, char *, int);
 #endif
 
 void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);

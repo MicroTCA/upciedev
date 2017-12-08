@@ -5,7 +5,7 @@
 
 MODULE_AUTHOR("Ludwig Petrosyan, David Kalantaryan");
 MODULE_DESCRIPTION("DESY PCIE universal driver");
-MODULE_VERSION("6.0.0");
+MODULE_VERSION("7.0.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 int g_nPrintDebugInfo = 0;
