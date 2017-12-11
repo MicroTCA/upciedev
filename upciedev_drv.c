@@ -1,3 +1,26 @@
+/**
+*Copyright 2016-  DESY (Deutsches Elektronen-Synchrotron, www.desy.de)
+*
+*This file is part of UPCIEDEV driver.
+*
+*UPCIEDEV is free software: you can redistribute it and/or modify
+*it under the terms of the GNU General Public License as published by
+*the Free Software Foundation, either version 3 of the License, or
+*(at your option) any later version.
+*
+*UPCIEDEV is distributed in the hope that it will be useful,
+*but WITHOUT ANY WARRANTY; without even the implied warranty of
+*MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*GNU General Public License for more details.
+*
+*You should have received a copy of the GNU General Public License
+*along with UPCIEDEV.  If not, see <http://www.gnu.org/licenses/>.
+**/
+
+/*
+*	Author: Ludwig Petrosyan (Email: ludwig.petrosyan@desy.de)
+*/
+
 #include <linux/module.h>
 
 #include "pciedev_ufn.h"
@@ -5,7 +28,7 @@
 
 MODULE_AUTHOR("Ludwig Petrosyan, David Kalantaryan");
 MODULE_DESCRIPTION("DESY PCIE universal driver");
-MODULE_VERSION("7.0.0");
+MODULE_VERSION("8.0.0");
 MODULE_LICENSE("Dual BSD/GPL");
 
 int g_nPrintDebugInfo = 0;
