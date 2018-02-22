@@ -77,7 +77,7 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 	pdev            = (dev->pciedev_pci_dev);
 
 	if(!dev->dev_sts){
-		printk("PCIEDEV_IOCTRL: NO DEVICE %d\n", dev->dev_num);
+		printk("PCIEDEV_IOCTRL: NO DEVICE  DEV_NUM %d SLOT NUM %d\n", dev->dev_num, dev->slot_num);
 		retval = -EFAULT;
 		return retval;
 	}
