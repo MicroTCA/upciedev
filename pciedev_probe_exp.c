@@ -328,6 +328,7 @@ static inline int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
 */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,13,0)
+	if(tmp_msi_num >0)pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag = PCI_IRQ_ALL_TYPES ;
 	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->msi_num = pci_alloc_irq_vectors(dev, 1, tmp_msi_num, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag);
 #else 
 	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->msi_num = pci_enable_msi_range(dev, 1, tmp_msi_num);

@@ -24,7 +24,7 @@
 
 #include <linux/module.h>
 #include <linux/fs.h>	
-#include <asm/uaccess.h>
+//#include <asm/uaccess.h>
 
 #include "pciedev_ufn.h"
 #include "read_write_inline.h"

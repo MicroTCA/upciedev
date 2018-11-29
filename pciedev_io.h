@@ -82,7 +82,7 @@
 	if((_a_rw_mode_)<0 || (_a_rw_mode_)>= MTCA_MAX_RW){(_a_rw_mode_)=(_a_default_rw_mode_);}\
 }
 
-typedef u_int64_t pointer_type;
+typedef uint64_t pointer_type;
 
 /*
  * GetRegisterSizeInBytes:  gets register size from RW mode
@@ -106,26 +106,26 @@ static inline int	GetRegisterSizeInBytes(int16_t a_unMode, int16_t a_default_rw_
 
 /* generic register access */
 struct device_rw  {
-	u_int32_t            offset_rw; /* offset in address                       */
-	u_int32_t            data_rw;   /* data to set or returned read data       */
+	uint32_t            offset_rw; /* offset in address                       */
+	uint32_t            data_rw;   /* data to set or returned read data       */
 	union
 	{
-		u_int32_t			mode_rw;	/* mode of rw (RW_D8, RW_D16, RW_D32)      */
-		u_int32_t			register_size; /* (RW_D8, RW_D16, RW_D32)      */
+		uint32_t			mode_rw;	/* mode of rw (RW_D8, RW_D16, RW_D32)      */
+		uint32_t			register_size; /* (RW_D8, RW_D16, RW_D32)      */
 	};
-	u_int32_t            barx_rw;   /* BARx (0, 1, 2, 3, 4, 5)                 */
+	uint32_t            barx_rw;   /* BARx (0, 1, 2, 3, 4, 5)                 */
 	union
 	{
 		struct
 		{
-			u_int32_t		size_rw;	// !!! transfer size should not be providefd by this field.
+			uint32_t		size_rw;	// !!! transfer size should not be providefd by this field.
 								// This field is there for backward compatibility.
 								//
 								// Transfer size should be provided with read/write 3-rd
 								// argument (count)
 								// read(int fd, void *buf, size_t count);
 								// ssize_t write(int fd, const void *buf, size_t count);
-			u_int32_t		rsrvd_rw;
+			uint32_t		rsrvd_rw;
 		};
 		pointer_type		dataPtr;	// In the case of more than one register access
 		// this fields shows pointer to user data
@@ -136,11 +136,11 @@ typedef struct device_rw device_rw;
 /* generic register access from ioctl system call*/
 typedef struct device_ioc_rw 
 {
-	u_int16_t		register_size;	/* (RW_D8, RW_D16, RW_D32)      */
-	u_int16_t		rw_access_mode;	/* mode of rw (MTCA_SIMLE_READ,...)      */
-	u_int32_t		barx_rw;	/* BARx (0, 1, 2, 3, 4, 5)                 */
-	u_int32_t		offset_rw;	/* offset in address                       */
-	u_int32_t		count_rw;	/* number of register to read or write     */
+	uint16_t		register_size;	/* (RW_D8, RW_D16, RW_D32)      */
+	uint16_t		rw_access_mode;	/* mode of rw (MTCA_SIMLE_READ,...)      */
+	uint32_t		barx_rw;	/* BARx (0, 1, 2, 3, 4, 5)                 */
+	uint32_t		offset_rw;	/* offset in address                       */
+	uint32_t		count_rw;	/* number of register to read or write     */
 	pointer_type	dataPtr;	// In the case of more than one register access
 	pointer_type	maskPtr;	// mask for bitwise write operations
 }device_ioc_rw;
@@ -149,26 +149,26 @@ typedef struct device_ioc_rw
 /* generic vector register access from ioctl system call*/
 typedef struct device_vector_rw
 {
-	u_int64_t		number_of_rw;		/* Number of read or write operations to perform     */
+	uint64_t		number_of_rw;		/* Number of read or write operations to perform     */
 	pointer_type	device_ioc_rw_ptr;	// User space pointer to read or write data    
 								// In kernel space this field should be casted to (device_ioc_rw* __user)
 }device_vector_rw;
 
 struct device_ioctrl_data  {
-        u_int    offset;
-        u_int    data;
-        u_int    cmd;
-        u_int    reserved;
+        unsigned int   offset;
+        unsigned int   data;
+        unsigned int   cmd;
+        unsigned int   reserved;
 };
 typedef struct device_ioctrl_data device_ioctrl_data;
 
 struct device_ioctrl_dma  {
-        u_int    dma_offset;
-        u_int    dma_size;
-        u_int    dma_cmd;          // value to DMA Control register
-        u_int    dma_pattern;     // DMA BAR num
-        u_int    dma_reserved1; // DMA Control register offset (31:16) DMA Length register offset (15:0)
-        u_int    dma_reserved2; // DMA Read/Write Source register offset (31:16) Destination register offset (15:0)
+        unsigned int   dma_offset;
+        unsigned int   dma_size;
+        unsigned int   dma_cmd;          // value to DMA Control register
+        unsigned int   dma_pattern;     // DMA BAR num
+        unsigned int   dma_reserved1; // DMA Control register offset (31:16) DMA Length register offset (15:0)
+        unsigned int   dma_reserved2; // DMA Read/Write Source register offset (31:16) Destination register offset (15:0)
 };
 typedef struct device_ioctrl_dma device_ioctrl_dma;
 
@@ -179,65 +179,65 @@ struct device_ioctrl_time  {
 typedef struct device_ioctrl_time device_ioctrl_time;
 
 struct device_i2c_rw  {
-       u_int            busNum; /* I2C Bus num*/
-       u_int            devAddr;   /* I2C device address on the current bus */
-       u_int            regAddr;   /* I2C register address on the current device */
-       u_int            size;   /* number of bytes to  read/write*/
-       u_int            done;  /* read done*/
-       u_int            timeout;   /* transfer timeout usec */             
-       u_int            status;  /* status */
-       u_int            data[256];  /* data */
+       unsigned int           busNum; /* I2C Bus num*/
+       unsigned int           devAddr;   /* I2C device address on the current bus */
+       unsigned int           regAddr;   /* I2C register address on the current device */
+       unsigned int           size;   /* number of bytes to  read/write*/
+       unsigned int           done;  /* read done*/
+       unsigned int           timeout;   /* transfer timeout usec */             
+       unsigned int           status;  /* status */
+       unsigned int           data[256];  /* data */
 };
 typedef struct device_i2c_rw device_i2c_rw;
 
 //PICMG SHAPI
 struct picmg_shapi_device_info {
-    u_int SHAPI_VERSION;
-    u_int SHAPI_FIRST_MODULE_ADDRESS;
-    u_int SHAPI_HW_IDS ; 
-    u_int SHAPI_FW_IDS  ;
-    u_int SHAPI_FW_VERSION  ;
-    u_int SHAPI_FW_TIMESTAMP  ;
-    u_int SHAPI_FW_NAME[3];
-    u_int SHAPI_DEVICE_CAP;
-    u_int SHAPI_DEVICE_STATUS ; 
-    u_int SHAPI_DEVICE_CONTROL  ;
-    u_int SHAPI_IRQ_MASK  ;
-    u_int SHAPI_IRQ_FLAG  ;
-    u_int SHAPI_IRQ_ACTIVE;
-    u_int SHAPI_SCRATCH_REGISTER;
+    unsigned int SHAPI_VERSION;
+    unsigned int SHAPI_FIRST_MODULE_ADDRESS;
+    unsigned int SHAPI_HW_IDS ; 
+    unsigned int SHAPI_FW_IDS  ;
+    unsigned int SHAPI_FW_VERSION  ;
+    unsigned int SHAPI_FW_TIMESTAMP  ;
+    unsigned int SHAPI_FW_NAME[3];
+    unsigned int SHAPI_DEVICE_CAP;
+    unsigned int SHAPI_DEVICE_STATUS ; 
+    unsigned int SHAPI_DEVICE_CONTROL  ;
+    unsigned int SHAPI_IRQ_MASK  ;
+    unsigned int SHAPI_IRQ_FLAG  ;
+    unsigned int SHAPI_IRQ_ACTIVE;
+    unsigned int SHAPI_SCRATCH_REGISTER;
     char fw_name[13];
     int    number_of_modules;
 };
 typedef struct picmg_shapi_device_info picmg_shapi_device_info;
 
 struct picmg_shapi_module_info {
-    u_int SHAPI_VERSION;
-    u_int SHAPI_NEXT_MODULE_ADDRESS;
-    u_int SHAPI_MODULE_FW_IDS ; 
-    u_int SHAPI_MODULE_VERSION  ;
-    u_int SHAPI_MODULE_NAME[2] ;
-    u_int SHAPI_MODULE_CAP;
-    u_int SHAPI_MODULE_STATUS;
-    u_int SHAPI_MODULE_CONTROL ; 
-    u_int SHAPI_IRQ_ID  ;
-    u_int SHAPI_IRQ_FLAG_CLEAR  ;
-    u_int SHAPI_IRQ_MASK  ;
-    u_int SHAPI_IRQ_FLAG;
-    u_int SHAPI_IRQ_ACTIVE;
+    unsigned int SHAPI_VERSION;
+    unsigned int SHAPI_NEXT_MODULE_ADDRESS;
+    unsigned int SHAPI_MODULE_FW_IDS ; 
+    unsigned int SHAPI_MODULE_VERSION  ;
+    unsigned int SHAPI_MODULE_NAME[2] ;
+    unsigned int SHAPI_MODULE_CAP;
+    unsigned int SHAPI_MODULE_STATUS;
+    unsigned int SHAPI_MODULE_CONTROL ; 
+    unsigned int SHAPI_IRQ_ID  ;
+    unsigned int SHAPI_IRQ_FLAG_CLEAR  ;
+    unsigned int SHAPI_IRQ_MASK  ;
+    unsigned int SHAPI_IRQ_FLAG;
+    unsigned int SHAPI_IRQ_ACTIVE;
     char module_name[9];
     int module_num;
 };
 typedef struct picmg_shapi_module_info picmg_shapi_module_info;
 
 struct device_phys_address  {
-	u_int    slot;
-	u_int    bar;
-	u_int    offset;
-	u_int    phs_address;
-	u_int    phs_end;
-	u_int    phs_flag;
-	u_int    reserved;
+	unsigned int   slot;
+	unsigned int   bar;
+	unsigned int   offset;
+	unsigned int   phs_address;
+	unsigned int   phs_end;
+	unsigned int   phs_flag;
+	unsigned int   reserved;
 };
 typedef struct device_phys_address device_phys_address;
 

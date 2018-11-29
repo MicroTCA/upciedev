@@ -54,6 +54,7 @@
 #include <linux/proc_fs.h>
 #include <linux/mm.h>
 #include <linux/uaccess.h>
+#include <linux/seq_file.h>	
 #include "criticalregionlock.h"
 #include "pciedev_io.h"
 

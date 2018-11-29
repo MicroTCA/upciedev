@@ -32,7 +32,7 @@ extern struct upciedev_base_dev base_upciedev_dev;
 
 int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char *dev_name, int * brd_num)
 {
-     pciedev_dev                *pciedevdev;
+     pciedev_dev                *pciedevdev = 0;
      int                    tmp_dev_num  = 0;
      int                    tmp_slot_num  = 0;
      int                    m_brdNum      = 0;
@@ -52,6 +52,8 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
      printk(KERN_ALERT "PCIEDEV_REMOVE_EXP CALLED\n");
     
     pciedevdev = dev_get_drvdata(&(dev->dev));
+    if(!pciedevdev) return 0;
+	
     tmp_dev_num  = pciedevdev->dev_num;
     tmp_slot_num  = pciedevdev->slot_num;
     m_brdNum      = pciedevdev->brd_num;
