@@ -266,7 +266,11 @@ int KillPidWithInfo(pid_t a_unPID, int a_nSignal, struct siginfo* a_pInfo)
 	{
 		a_pInfo->si_signo = a_nSignal;
 		a_pInfo->si_code = SI_QUEUE;
-		return kill_pid_info_as_cred(a_nSignal, a_pInfo, pPidStr, pCred, 0);
+		#if LINUX_VERSION_CODE < KERNEL_VERSION(4,18,0)
+			return kill_pid_info_as_cred(a_nSignal, a_pInfo, pPidStr, pCred, 0);
+		#else
+			return kill_pid_info_as_cred(a_nSignal, a_pInfo, pPidStr, pCred);
+		#endif
 	}
 
 	return -1;

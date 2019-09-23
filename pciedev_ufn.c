@@ -30,9 +30,11 @@
 
 #include "pciedev_ufn.h"
 
+/*
 struct upciedev_base_dev base_upciedev_dev;
 struct upciedev_base_dev *p_base_upciedev_dev = &base_upciedev_dev;
 EXPORT_SYMBOL(p_base_upciedev_dev);
+ */
 
 struct vm_operations_struct upciedev_remap_vm_ops = {
 	.open =  upciedev_vma_open,
@@ -85,7 +87,22 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	pciedev_cdev_p->PCIEDEV_DRV_VER_MIN = simple_strtol(pciedev_fops->owner->version + 2, endptr, 10);
 	printk(KERN_ALERT "&&&&&UPCIEDEV_INIT CALLED; THIS MODULE VERSION %i.%i\n", 
 		pciedev_cdev_p->PCIEDEV_DRV_VER_MAJ, pciedev_cdev_p->PCIEDEV_DRV_VER_MIN);
-    
+	
+	
+	/*
+	for(i = 0; i < NUMBER_OF_SLOTS + 1; ++i){
+		p_base_upciedev_dev->dev_phys_addresses[i].dev_stst = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_bus = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_device = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_num = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_pciedev = 0;
+		for(k = 0; k < NUMBER_OF_BARS ; ++k){
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_end   = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_flag   = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_start = 0;
+		}
+	}
+	*/
     
 	for(i = 0; i <= PCIEDEV_NR_DEVS;i++){
         
@@ -131,8 +148,8 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.file_cnt = 0;
 	pciedev_cdev_p->pciedev_dev_m[i]->null_dev                   = 0;
 	printk(KERN_ALERT "INIT ADD PARENT BASE\n");
-	//pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = b_dev;
-	pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = p_base_upciedev_dev;
+	pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = &base_upciedev_dev;
+	//pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = p_base_upciedev_dev;
 	
 	
 
@@ -314,35 +331,48 @@ u_int  pciedev_get_physical_address(struct pciedev_dev *dev, device_phys_address
 	slotnm    = slotdev->slot;
 	slotbar    = slotdev->bar;
 	
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i BAR %i\n", slotnm, slotbar);
 	if(!slotnm){
 		return -1;
 	}
-	
-/*
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i \n", slotnm);
-	phaddress = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_start;
-	slotdev->phs_address = phaddress;
-	slotdev->phs_end = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_end;
-	slotdev->phs_flag = base_upciedev_dev.dev_phys_addresses[slotnm].bars[slotbar].res_flag;
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i START %X\n", slotdev->phs_address, i);
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i STOP %X\n", slotdev->phs_end , i);
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i FLAG %X\n", slotdev->phs_flag , i);
-*/
-	
-	
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: SLOT %i \n", slotnm);
+		
 	phaddress = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_start;
 	slotdev->phs_address = phaddress;
 	slotdev->phs_end = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_end;
 	slotdev->phs_flag = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_flag;
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: START %X\n", slotdev->phs_address);
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: STOP %X\n", slotdev->phs_end );
-	printk(KERN_NOTICE "GET_PHYS_ADDRESS: FLAG %X\n", slotdev->phs_flag );
 	
 	return phaddress;
 }
 EXPORT_SYMBOL(pciedev_get_physical_address);
+
+
+int  pciedev_get_slot_pciedevp(struct pciedev_dev *dev, device_phys_address *slotdev)
+{
+	int i = 0;
+	u_int slotnm = 0;
+	u_int slotbar = 0;
+	u_int phaddress = 0;
+	
+	slotnm    = slotdev->slot;
+	slotbar    = slotdev->bar;
+	
+	if(!slotnm){
+		return -1;
+	}
+	
+	slotdev->offset = dev->parent_base_dev->dev_phys_addresses[slotnm].slot_bus;
+	slotdev->reserved = dev->parent_base_dev->dev_phys_addresses[slotnm].slot_device;	
+	phaddress = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_start;
+	slotdev->phs_address = phaddress;
+	slotdev->phs_end = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_end;
+	slotdev->phs_flag = dev->parent_base_dev->dev_phys_addresses[slotnm].bars[slotbar].res_flag;
+	slotdev->sts = dev->parent_base_dev->dev_phys_addresses[slotnm].dev_stst;
+	
+	return dev->parent_base_dev->dev_phys_addresses[slotnm].dev_stst;
+	
+}
+EXPORT_SYMBOL(pciedev_get_slot_pciedevp);
+
+
 
 void upciedev_vma_open(struct vm_area_struct *vma)
 {

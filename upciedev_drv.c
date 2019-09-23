@@ -37,6 +37,9 @@ module_param_named(debug, g_nPrintDebugInfo, int, S_IRUGO | S_IWUSR);
 EXPORT_SYMBOL(g_nPrintDebugInfo);
 #endif
 
+struct upciedev_base_dev *p_base_upciedev_dev = &base_upciedev_dev;
+EXPORT_SYMBOL(p_base_upciedev_dev);
+
 static void __exit pciedev_cleanup_module(void)
 {
 	printk(KERN_NOTICE "UPCIEDEV_CLEANUP_MODULE CALLED\n");
@@ -54,9 +57,27 @@ EXPORT_SYMBOL(UociedevTestFunction);
 static int __init pciedev_init_module(void)
 {
 	int   result  = 0;
+	int                    i          = 0;
+	int                    k         = 0;
 
 	printk(KERN_NOTICE "UPCIEDEV_INIT_MODULE  MMAP VERSION CALLED\n");
 	UociedevTestFunction("UPCIEDEV");
+	
+	
+	
+	for(i = 0; i < NUMBER_OF_SLOTS + 1; ++i){
+		p_base_upciedev_dev->dev_phys_addresses[i].dev_stst = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_bus = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_device = 0;
+		p_base_upciedev_dev->dev_phys_addresses[i].slot_num = 0;
+		for(k = 0; k < NUMBER_OF_BARS ; ++k){
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_end   = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_flag   = 0;
+			p_base_upciedev_dev->dev_phys_addresses[i].bars[k].res_start = 0;
+		}
+	}
+	
+	
 	printk(KERN_ALERT "UPCIEDEV_INIT:REGISTERING PCI DRIVER sizeof(loff_t)=%d, __USER_CS=0x%x\n", (int)sizeof(loff_t), (int)__USER_CS);
 	return result; /* succeed */
 }

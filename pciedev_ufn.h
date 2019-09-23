@@ -58,11 +58,15 @@
 #include "criticalregionlock.h"
 #include "pciedev_io.h"
 
+static struct upciedev_base_dev base_upciedev_dev;
+//struct upciedev_base_dev *p_base_upciedev_dev = &base_upciedev_dev;
+//EXPORT_SYMBOL(p_base_upciedev_dev);
+
 #ifndef NUMBER_OF_BARS
 #define NUMBER_OF_BARS 6
 #endif
 
-#define NUMBER_OF_SLOTS 12  
+#define NUMBER_OF_SLOTS 15 
 
 #ifndef PCIEDEV_NR_DEVS
 #define PCIEDEV_NR_DEVS 15    /* pciedev0 through pciedev15 */
@@ -141,6 +145,9 @@
 #define	_PCI_REGIONS_REQUESTED		8
 #define	_CREATED_ADDED_BY_USER		9
 
+struct pciedev_cdev ;
+struct pciedev_dev ;
+
 struct upciedev_bar_address {
     u32 res_start;
     u32 res_end;
@@ -149,8 +156,11 @@ struct upciedev_bar_address {
 typedef struct upciedev_bar_address  upciedev_bar_address ;
 
 struct upciedev_phys_address {
-    int      slot_num;
-    upciedev_bar_address  bars[NUMBER_OF_BARS];
+	int      slot_num;
+	int      dev_stst;
+	upciedev_bar_address  bars[NUMBER_OF_BARS];
+	u_int                                  slot_bus;
+	u_int                                  slot_device;
 };
 typedef struct upciedev_phys_address upciedev_phys_address;
 
@@ -360,6 +370,7 @@ int       pciedev_get_shapi_module_info(struct pciedev_dev *);
 int       pciedev_fill_shapi_module__info(struct pciedev_dev *, void *);
 
 u_int  pciedev_get_physical_address(struct pciedev_dev *, device_phys_address *);
+int      pciedev_get_slot_pciedevp(struct pciedev_dev *, device_phys_address *);
 
 //adding mmap staff
 /* The mmap system call declared as:

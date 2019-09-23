@@ -238,6 +238,7 @@ struct device_phys_address  {
 	unsigned int   phs_end;
 	unsigned int   phs_flag;
 	unsigned int   reserved;
+	unsigned int   sts;
 };
 typedef struct device_phys_address device_phys_address;
 

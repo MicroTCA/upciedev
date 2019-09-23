@@ -93,6 +93,9 @@ int pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev  *pciedev_cdev_m, char 
        }
     }
 	pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_num = 0;
+	pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].dev_stst = 0;
+	pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_bus = 0;
+	pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_device = 0;
 	for(d = 0; d < NUMBER_OF_BARS; ++d){
 		pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[d].res_start = 0;
 		pciedevdev->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[d].res_end = 0;

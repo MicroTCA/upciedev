@@ -49,6 +49,7 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     u32 res_end;
     u32 res_flag;
     int pcie_cap;
+    int pcie_parent_cap;
     u32 tmp_slot_cap     = 0;
     int tmp_slot_num     = 0;
     int tmp_dev_num      = 0;
@@ -59,13 +60,18 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     u8  dev_payload;
     u32 tmp_payload_size = 0;
 
-    u16 subvendor_id;
-    u16 subdevice_id;
-    u16 class_code;
-    u32 tmp_devfn;
-    u32 busNumber;
-    u32 devNumber;
-    u32 funcNumber;
+	u16 subvendor_id;
+	u16 subdevice_id;
+	u16 class_code;
+	u32 tmp_devfn;
+	u32 busNumber;
+	u32 devNumber;
+	u32 funcNumber;
+
+	u32 ptmp_devfn;
+	u32 pbusNumber;
+	u32 pdevNumber;
+	u32 pfuncNumber;
     
     char f_name[64];
     char prc_entr[64];
@@ -113,41 +119,33 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     printk(KERN_ALERT "PCIEDEV_PROBE:DEVFN %X, BUS_NUM %X, DEV_NUM %X, FUNC_NUM %X, BUS_FUNC %x\n",
                                       tmp_devfn, busNumber, devNumber, funcNumber, tmp_bus_func);
 
-    tmp_devfn  = (u32)dev->bus->self->devfn;
-    busNumber  = (u32)dev->bus->self->bus->number;
-    devNumber  = (u32)PCI_SLOT(tmp_devfn);
-    funcNumber = (u32)PCI_FUNC(tmp_devfn);
+    ptmp_devfn  = (u32)dev->bus->self->devfn;
+    pbusNumber  = (u32)dev->bus->self->bus->number;
+    pdevNumber  = (u32)PCI_SLOT(tmp_devfn);
+    pfuncNumber = (u32)PCI_FUNC(tmp_devfn);
     printk(KERN_ALERT "PCIEDEV_PROBE:DEVFN %X, BUS_NUM %X, DEV_NUM %X, FUNC_NUM %X\n",
-                                      tmp_devfn, busNumber, devNumber, funcNumber);
-	
-	
-/*
-    if(tmp_parent_num > 0){
-		printk(KERN_ALERT "PCIEDEV_PROBE  BRIDG DEVICE GET SLOT NUM FROM PARENT  %d\n", tmp_parent_num);
-		tmp_devfn  = (u32)dev->bus->parent->self->devfn;
-		busNumber  = (u32)dev->bus->parent->self->bus->number;
-		devNumber  = (u32)PCI_SLOT(tmp_devfn);
-		funcNumber = (u32)PCI_FUNC(tmp_devfn);
-		printk(KERN_ALERT "PCIEDEV_PROBE:DEVFN %X, BUS_NUM %X, DEV_NUM %X, FUNC_NUM %X\n",
-										  tmp_devfn, busNumber, devNumber, funcNumber);
-		pcie_cap = pci_find_capability (dev->bus->parent->self, PCI_CAP_ID_EXP);
-		printk(KERN_INFO "PCIEDEV_PROBE: PCIE SWITCH CAP address %X\n",pcie_cap);
+                                      ptmp_devfn, pbusNumber, pdevNumber, pfuncNumber);
 
-		pci_read_config_dword(dev->bus->parent->self, (pcie_cap +PCI_EXP_SLTCAP), &tmp_slot_cap);
+	pcie_cap = pci_find_capability (dev->bus->self, PCI_CAP_ID_EXP);
+	printk(KERN_INFO "PCIEDEV_PROBE: PCIE SWITCH CAP address %X\n",pcie_cap);
+
+	pci_read_config_dword(dev->bus->self, (pcie_cap +PCI_EXP_SLTCAP), &tmp_slot_cap);
+	tmp_slot_num = (tmp_slot_cap >> 19);
+	tmp_dev_num  = tmp_slot_num;
+	printk(KERN_ALERT "PCIEDEV_PROBE:SLOT NUM %d DEV NUM%d SLOT_CAP %X\n",tmp_slot_num,tmp_dev_num,tmp_slot_cap);
+	if(tmp_parent_num == 1){
+		pcie_parent_cap =pci_find_capability (dev->bus->parent->self, PCI_CAP_ID_EXP);
+		pci_read_config_dword(dev->bus->parent->self, (pcie_parent_cap +PCI_EXP_SLTCAP), &tmp_slot_cap);
 		tmp_slot_num = (tmp_slot_cap >> 19);
 		tmp_dev_num  = tmp_slot_num;
-		printk(KERN_ALERT "PCIEDEV_PROBE:SLOT NUM %d DEV NUM%d SLOT_CAP %X\n",tmp_slot_num,tmp_dev_num,tmp_slot_cap);
-		
-    }else{
-*/
-		pcie_cap = pci_find_capability (dev->bus->self, PCI_CAP_ID_EXP);
-		printk(KERN_INFO "PCIEDEV_PROBE: PCIE SWITCH CAP address %X\n",pcie_cap);
-
-		pci_read_config_dword(dev->bus->self, (pcie_cap +PCI_EXP_SLTCAP), &tmp_slot_cap);
-		tmp_slot_num = (tmp_slot_cap >> 19);
+		printk(KERN_ALERT "PCIEDEV_PROBE:PARENTSLOT NUM %d DEV NUM%d SLOT_CAP %X\n",tmp_slot_num,tmp_dev_num,tmp_slot_cap);
+	}
+	if(tmp_parent_num == 2){
+		tmp_slot_num = 13;
 		tmp_dev_num  = tmp_slot_num;
-		printk(KERN_ALERT "PCIEDEV_PROBE:SLOT NUM %d DEV NUM%d SLOT_CAP %X\n",tmp_slot_num,tmp_dev_num,tmp_slot_cap);
-  //  }
+		printk(KERN_ALERT "PCIEDEV_PROBE:NTB DEVICE PARENTSLOT NUM %d DEV NUM%d \n",tmp_slot_num,tmp_dev_num);
+	}
+	
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->swap         = 0;
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->slot_num  = tmp_slot_num;
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->bus_func  = tmp_bus_func;
@@ -207,11 +205,11 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq_line);
     pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &irq_pin);
     
-    printk(KERN_INFO "PCIEDEV_PROBE: VENDOR_ID  %i\n",vendor_id);
-    printk(KERN_INFO "PCIEDEV_PROBE: PCI_DEVICE_ID  %i\n",device_id);
-    printk(KERN_INFO "PCIEDEV_PROBE: PCI_SUBSYSTEM_VENDOR_ID  %i\n",subvendor_id);
-    printk(KERN_INFO "PCIEDEV_PROBE: PCI_SUBSYSTEM_ID  %i\n",subdevice_id);
-    printk(KERN_INFO "PCIEDEV_PROBE: PCI_CLASS_DEVICE  %i\n",class_code);
+    printk(KERN_INFO "PCIEDEV_PROBE: VENDOR_ID  %X\n",vendor_id);
+    printk(KERN_INFO "PCIEDEV_PROBE: PCI_DEVICE_ID  %X\n",device_id);
+    printk(KERN_INFO "PCIEDEV_PROBE: PCI_SUBSYSTEM_VENDOR_ID  %X\n",subvendor_id);
+    printk(KERN_INFO "PCIEDEV_PROBE: PCI_SUBSYSTEM_ID  %X\n",subdevice_id);
+    printk(KERN_INFO "PCIEDEV_PROBE: PCI_CLASS_DEVICE  %X\n",class_code);
 
      pciedev_cdev_p->pciedev_dev_m[m_brdNum]->vendor_id      = vendor_id;
      pciedev_cdev_p->pciedev_dev_m[m_brdNum]->device_id      = device_id;
@@ -223,6 +221,12 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
      pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_pin        = irq_pin;
      pciedev_cdev_p->pciedev_dev_m[m_brdNum]->scratch_bar    = 0;
      pciedev_cdev_p->pciedev_dev_m[m_brdNum]->scratch_offset = 0;
+	 
+   /*****Set Up Base Tables*/
+	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].dev_stst       = 1;
+	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_num      = tmp_slot_num;
+	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_bus        =busNumber;
+	pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_device   = devNumber;
     
     /*******SETUP BARs******/
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_all_mems = 0;
@@ -235,36 +239,22 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_end[i]   = res_end;
             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i]  = res_flag;
             if(res_start){
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = pci_iomap(dev, i, (res_end - res_start));
-                printk(KERN_INFO "PCIEDEV_PROBE: mem_region %d address %X  SIZE %X FLAG %X MMAPED %X\n",
-			i,res_start, (res_end - res_start),
-			pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i],
-			pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i]);
-				
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i] = (res_end - res_start);
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_all_mems += nToAdd;
-				
-		
-/*
-		base_upciedev_dev.dev_phys_addresses[tmp_slot_num].slot_num = tmp_slot_num;
-		base_upciedev_dev.slot_dev[tmp_slot_num] = pciedev_cdev_p;
-		for(d = 0; d < NUMBER_OF_BARS; ++d){
-			base_upciedev_dev.dev_phys_addresses[tmp_slot_num].bars[d].res_start = res_start;
-			base_upciedev_dev.dev_phys_addresses[tmp_slot_num].bars[d].res_end = res_end;
-			base_upciedev_dev.dev_phys_addresses[tmp_slot_num].bars[d].res_flag = res_flag;
-		}
-*/
-		
-		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].slot_num = tmp_slot_num;
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = pci_iomap(dev, i, (res_end - res_start));
+		printk(KERN_INFO "PCIEDEV_PROBE: mem_region %d address %X  SIZE %X FLAG %X MMAPED %X\n",
+			                                                                                                                           i,res_start, (res_end - res_start),
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i],
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i]);
+
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i] = (res_end - res_start);
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_all_mems += nToAdd;
+
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[i].res_start = res_start;
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[i].res_end = res_end;
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[tmp_slot_num].bars[i].res_flag = res_flag;
-		
-            }
-            else{
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = 0;
-                pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i]       = 0;
-                printk(KERN_INFO "PCIEDEV: NO BASE%i address\n", i);
+            } else{
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = 0;
+		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->rw_off[i]       = 0;
+		printk(KERN_INFO "PCIEDEV: NO BASE%i address\n", i);
             }
         }
 	
@@ -279,6 +269,12 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
 			printk(KERN_NOTICE "PROBE_PHYS_ADDRESS: DEV_NUM %i BAR %i FLAG %X\n", 
 				i, k, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[i].bars[k].res_start);
 		}
+		printk(KERN_NOTICE "PROBE_PHYS_ADDRESS: DEV_NUM %i BUS %X\n", 
+			i, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[i].slot_bus);
+		printk(KERN_NOTICE "PROBE_PHYS_ADDRESS: DEV_NUM %i DEVICE %X\n", 
+			i, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[i].slot_device);
+		printk(KERN_NOTICE "PROBE_PHYS_ADDRESS: DEV_NUM %i DEV_STS %i\n", 
+			i, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->parent_base_dev->dev_phys_addresses[i].dev_stst);
 	}
 	
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->enbl_irq_num = 0;
