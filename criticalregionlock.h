@@ -51,6 +51,7 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/pid.h>
+#include <linux/sched/signal.h>
 
 
 #ifdef USE_SEMAPHORE
@@ -61,7 +62,7 @@
 
 enum _SEM_LOCK_TYPE_{_NO_LOCK_,_SHORT_LOCK_UNLOCK_,_LONG_LOCK_UNLOCK_};
 
-extern int KillPidWithInfo(pid_t pid, int sigNum, struct siginfo* info);
+extern int KillPidWithInfo(pid_t a_unPID, int a_nSignal, struct siginfo* a_pInfo);
 //extern int KillPidWithInfo(pid_t a_unPID, int a_nSignal, struct siginfo* a_pInfo);
 
 #ifdef USE_SEMAPHORE

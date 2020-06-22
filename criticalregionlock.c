@@ -230,6 +230,8 @@ static inline int LockCritRegionPrivate(struct SCriticalRegionLock* a_pLock, enu
 			spin_unlock(&a_pLock->m_spinlock);
 
 			if (lnPidToKill){ struct siginfo aSigInfo; KillPidWithInfo(lnPidToKill, SIGALRM, &aSigInfo); lnPidToKill = 0; }
+			
+			
 
 		} // if (unlikely(down_timeout(&a_pLock->m_semaphore, a_pLock->m_ulnJiffiesTmOut)))
 		else
@@ -255,13 +257,13 @@ static inline int LockCritRegionPrivate(struct SCriticalRegionLock* a_pLock, enu
 #endif  /* #ifdef USE_SEMAPHORE */
 
 
-
 int KillPidWithInfo(pid_t a_unPID, int a_nSignal, struct siginfo* a_pInfo)
 {
 	struct pid* pPidStr = find_vpid(a_unPID);
 	struct task_struct * pTask = pPidStr ? pid_task(pPidStr, PIDTYPE_PID) : NULL;
 	const struct cred* pCred = pTask ? pTask->cred : NULL;
 
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(5,1,19)
 	if (pCred)
 	{
 		a_pInfo->si_signo = a_nSignal;
@@ -272,8 +274,12 @@ int KillPidWithInfo(pid_t a_unPID, int a_nSignal, struct siginfo* a_pInfo)
 			return kill_pid_info_as_cred(a_nSignal, a_pInfo, pPidStr, pCred);
 		#endif
 	}
-
+	#else
+	sigval_t addr;
+	kill_pid_usb_asyncio(a_nSignal, 0, addr, pPidStr, pCred);
+	#endif
 	return -1;
 }
+
 EXPORT_SYMBOL(KillPidWithInfo);
 

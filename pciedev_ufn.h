@@ -58,6 +58,17 @@
 #include "criticalregionlock.h"
 #include "pciedev_io.h"
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,0,1)
+static inline void do_gettimeofday(struct timeval *tv)
+{
+	struct timespec64 now;
+
+	ktime_get_real_ts64(&now);
+	tv->tv_sec = now.tv_sec;
+	tv->tv_usec = now.tv_nsec/1000;
+}
+#endif
+
 static struct upciedev_base_dev base_upciedev_dev;
 //struct upciedev_base_dev *p_base_upciedev_dev = &base_upciedev_dev;
 //EXPORT_SYMBOL(p_base_upciedev_dev);
