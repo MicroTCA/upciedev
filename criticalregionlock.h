@@ -51,7 +51,7 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 #include <linux/pid.h>
-#include <linux/sched/signal.h>
+//#include <linux/sched/signal.h>
 
 
 #ifdef USE_SEMAPHORE

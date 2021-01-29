@@ -118,6 +118,9 @@ static inline void Read_Write_Private(u_int16_t a_usnRegSize, u_int16_t a_usnAcc
 			return;
 		case MT_READ_TO_EXTRA_BUFFER:
 			a_pValueKernel = a_pExtraR;
+			*((u8*)a_pValueKernel) = ioread8(a_addressDev);
+			smp_rmb();
+			return;
 		default:
 			*((u8*)a_pValueKernel) = ioread8(a_addressDev);
 			smp_rmb();
@@ -165,6 +168,11 @@ static inline void Read_Write_Private(u_int16_t a_usnRegSize, u_int16_t a_usnAcc
 			return;
 		case MT_READ_TO_EXTRA_BUFFER:
 			a_pValueKernel = a_pExtraR;
+			*((u16*)a_pValueKernel) = ioread16(a_addressDev);
+#ifndef _SMB_RMB_
+			smp_rmb();
+#endif
+			return;
 		default:
 			*((u16*)a_pValueKernel) = ioread16(a_addressDev);
 #ifndef _SMB_RMB_
@@ -212,6 +220,9 @@ static inline void Read_Write_Private(u_int16_t a_usnRegSize, u_int16_t a_usnAcc
 			return;
 		case MT_READ_TO_EXTRA_BUFFER:
 			a_pValueKernel = a_pExtraR;
+			*((u32*)a_pValueKernel) = ioread32(a_addressDev);
+			smp_rmb();
+			return;
 		default:
 			*((u32*)a_pValueKernel) = ioread32(a_addressDev);
 			smp_rmb();

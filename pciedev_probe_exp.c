@@ -29,7 +29,7 @@
 #include "pciedev_ufn.h"
 #include "pciedev_io.h"
 
-extern struct upciedev_base_dev base_upciedev_dev;
+//extern struct upciedev_base_dev base_upciedev_dev;
 
 int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id, 
             struct file_operations *pciedev_fops, pciedev_cdev *pciedev_cdev_p, char *dev_name, int * brd_num)
@@ -38,7 +38,7 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     int    m_brdNum   = 0;
     int     err       = 0;
     int     tmp_info = 0;
-    int     i, nToAdd, d, k;
+    int     i, nToAdd,  k;
     
     u16 vendor_id;
     u16 device_id;
@@ -240,8 +240,7 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
             pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i]  = res_flag;
             if(res_start){
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i] = pci_iomap(dev, i, (res_end - res_start));
-		printk(KERN_INFO "PCIEDEV_PROBE: mem_region %d address %X  SIZE %X FLAG %X MMAPED %X\n",
-			                                                                                                                           i,res_start, (res_end - res_start),
+		printk(KERN_INFO "PCIEDEV_PROBE: mem_region %d address %X  SIZE %X FLAG %X MMAPED %p\n", i,res_start, (res_end - res_start),
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->mem_base_flag[i],
 		pciedev_cdev_p->pciedev_dev_m[m_brdNum]->memmory_base[i]);
 
@@ -358,7 +357,7 @@ static inline int pci_enable_msi_exact(struct pci_dev *dev, int nvec)
     sprintf(f_name, "%ss%d", dev_name, tmp_slot_num);
     sprintf(prc_entr, "%ss%d", dev_name, tmp_slot_num);
     printk(KERN_INFO "PCIEDEV_PROBE:  CREAT DEVICE MAJOR %i MINOR %i F_NAME %s DEV_NAME %s\n",
-               pciedev_cdev_p->PCIEDEV_MAJOR, (pciedev_cdev_p->PCIEDEV_MINOR + m_brdNum), f_name);
+               pciedev_cdev_p->PCIEDEV_MAJOR, (pciedev_cdev_p->PCIEDEV_MINOR + m_brdNum), f_name, dev_name);
     
     device_create(pciedev_cdev_p->pciedev_class, NULL, MKDEV(pciedev_cdev_p->PCIEDEV_MAJOR,  pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_minor),
                             & pciedev_cdev_p->pciedev_dev_m[m_brdNum]->pciedev_pci_dev->dev, f_name, pciedev_cdev_p->pciedev_dev_m[m_brdNum]->dev_name);

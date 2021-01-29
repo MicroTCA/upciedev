@@ -101,8 +101,17 @@ static inline int	GetRegisterSizeInBytes(int16_t a_unMode, int16_t a_default_rw_
 	return __GetRegisterSizeInBytes__(a_unMode);
 }
 
-
-
+struct rwsize {
+	uint32_t		size_rw;	// !!! transfer size should not be providefd by this field.
+						// This field is there for backward compatibility.
+						//
+						// Transfer size should be provided with read/write 3-rd
+						// argument (count)
+						// read(int fd, void *buf, size_t count);
+						// ssize_t write(int fd, const void *buf, size_t count);
+	uint32_t		rsrvd_rw;
+};
+typedef struct rwsize rwsize;
 
 /* generic register access */
 struct device_rw  {
@@ -111,22 +120,19 @@ struct device_rw  {
 	union
 	{
 		uint32_t			mode_rw;	/* mode of rw (RW_D8, RW_D16, RW_D32)      */
-		uint32_t			register_size; /* (RW_D8, RW_D16, RW_D32)      */
+		uint32_t                        register_size; /*(RW_D8, RW_D16, RW_D32) */
 	};
 	uint32_t            barx_rw;   /* BARx (0, 1, 2, 3, 4, 5)                 */
 	union
 	{
-		struct
+		rwsize                     data_size;
+		/*
+		struct m_rwsize
 		{
-			uint32_t		size_rw;	// !!! transfer size should not be providefd by this field.
-								// This field is there for backward compatibility.
-								//
-								// Transfer size should be provided with read/write 3-rd
-								// argument (count)
-								// read(int fd, void *buf, size_t count);
-								// ssize_t write(int fd, const void *buf, size_t count);
-			uint32_t		rsrvd_rw;
+			uint32_t        size_rw;
+			uint32_t        rsrvd_rw;
 		};
+		*/
 		pointer_type		dataPtr;	// In the case of more than one register access
 		// this fields shows pointer to user data
 	};            

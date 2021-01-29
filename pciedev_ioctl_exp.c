@@ -383,7 +383,7 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			shapi_dev_info.SHAPI_FW_TIMESTAMP  = dev->device_info_list.SHAPI_FW_TIMESTAMP;
 			shapi_dev_info.SHAPI_FW_NAME[0] = dev->device_info_list.SHAPI_FW_NAME[0];
 			shapi_dev_info.SHAPI_FW_NAME[1] = dev->device_info_list.SHAPI_FW_NAME[1];
-			shapi_dev_info.SHAPI_FW_NAME[2] == dev->device_info_list.SHAPI_FW_NAME[2];
+			shapi_dev_info.SHAPI_FW_NAME[2] = dev->device_info_list.SHAPI_FW_NAME[2];
 			shapi_dev_info.SHAPI_DEVICE_CAP = dev->device_info_list.SHAPI_DEVICE_CAP;
 			shapi_dev_info.SHAPI_DEVICE_STATUS = dev->device_info_list.SHAPI_DEVICE_STATUS; 
 			shapi_dev_info.SHAPI_DEVICE_CONTROL  = dev->device_info_list.SHAPI_DEVICE_CONTROL;
@@ -431,7 +431,7 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 					shapi_mod_info.SHAPI_IRQ_FLAG = tmp_prj_info_list->SHAPI_IRQ_FLAG;
 					shapi_mod_info.SHAPI_IRQ_ACTIVE = tmp_prj_info_list->SHAPI_IRQ_ACTIVE;
 					strncpy(shapi_mod_info.module_name, tmp_prj_info_list->module_name, 9);
-					printk(KERN_INFO "PCIEDEV_GET_SHAPI_MODINFO:: SHAPI DEV_INFO NAME %s\n",  
+					printk(KERN_INFO "PCIEDEV_GET_SHAPI_MODINFO%s:: SHAPI DEV_INFO NAME %s\n",  
 					                    shapi_mod_info.module_name, tmp_prj_info_list->module_name);
 					shapi_mod_info.module_num = tmp_offset ;
 				}

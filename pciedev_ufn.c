@@ -46,7 +46,7 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 {
 	int                    i          = 0;
 	int                    k         = 0;
-	int                    d         = 0;
+	//int                    d         = 0;
 	int                    result  = 0;
 	int                    devno  = 0;
 	dev_t                devt     = 0;
@@ -323,7 +323,7 @@ EXPORT_SYMBOL(pciedev_get_baraddress);
 
 u_int  pciedev_get_physical_address(struct pciedev_dev *dev, device_phys_address *slotdev)
 {
-	int i = 0;
+	//int i = 0;
 	u_int slotnm = 0;
 	u_int slotbar = 0;
 	u_int phaddress = 0;
@@ -347,7 +347,7 @@ EXPORT_SYMBOL(pciedev_get_physical_address);
 
 int  pciedev_get_slot_pciedevp(struct pciedev_dev *dev, device_phys_address *slotdev)
 {
-	int i = 0;
+	//int i = 0;
 	u_int slotnm = 0;
 	u_int slotbar = 0;
 	u_int phaddress = 0;
@@ -736,7 +736,7 @@ int       pciedev_fill_shapi_module__info(struct pciedev_dev  *bdev, void  *bara
 
 	address           = baradress;
 	tmp_data_32  = ioread32(address );
-	printk(KERN_INFO "SHAPI FILL_MODULE_INFO BADDR %X MAGIC %X\n",  address, tmp_data_32);
+	//printk(KERN_INFO "SHAPI FILL_MODULE_INFO BADDR %X MAGIC %X\n",  (int)address, tmp_data_32);
 	if((tmp_data_32 >> 16) == SHAPI_MAGIC_MODULE_NUM ){
 		bdev->shapi_module_num++;
 		tmp_prj_info_list = kzalloc(sizeof(shapi_module_info), GFP_KERNEL);
@@ -839,7 +839,7 @@ int       pciedev_get_shapi_module_info(struct pciedev_dev  *bdev)
 	tmp_next_prj =bdev->device_info_list.SHAPI_FIRST_MODULE_ADDRESS;
 	if(tmp_next_prj){
 	baddress = bdev->memmory_base[0];
-	printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
+	//printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
 	while(tmp_next_prj){
 		address = baddress + tmp_next_prj;
 		tmp_next_prj = pciedev_fill_shapi_module__info(bdev, address);
@@ -853,7 +853,7 @@ int       pciedev_get_shapi_module_info(struct pciedev_dev  *bdev)
 				while (tmp_next_prj){
 					tmp_next_prj = tmp_next_prj1;
 					address = baddress + tmp_next_prj;
-					printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
+					//printk(KERN_INFO "SHAPI GET_MODULE_INFO BADDR %X NEXT ADDR %X\n",  baddress, tmp_next_prj);
 					tmp_next_prj = pciedev_fill_shapi_module__info(bdev, address);
 				} // while (tmp_next_prj)
 			} // if (bdev->memmory_base[i])
