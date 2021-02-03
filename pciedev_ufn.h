@@ -59,7 +59,11 @@
 #include "pciedev_io.h"
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(5,0,1)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,6,1)
 static inline void do_gettimeofday(struct timeval *tv)
+#else
+static inline void do_gettimeofday(struct timeval *tv)
+#endif
 {
 	struct timespec64 now;
 
@@ -425,13 +429,12 @@ void unregister_upciedev_proc(int num, char *dfn);
 	int pciedev_proc_open(struct inode *inode, struct file *file);
 	int pciedev_proc_show(struct seq_file *m, void *v);
 	ssize_t pciedev_procinfo(struct file *filp,char *buf,size_t count,loff_t *offp );
+	#if LINUX_VERSION_CODE > KERNEL_VERSION(5,6,1)
+	extern const struct proc_ops upciedev_proc_fops;
+	#else
 	extern const struct file_operations upciedev_proc_fops;
-	//    static const struct file_operations upciedev_proc_fops = { 
-	//        .open           = pciedev_proc_open,
-	//        .read           = seq_read,
-	//        .llseek         = seq_lseek,
-	//        .release       = single_release,
-	//    }; 
+	#endif
+	
 #endif
 	
 extern void UociedevTestFunction(const char* report);

@@ -24,8 +24,10 @@
 #ifndef _PCIEDEV_IO_H
 #define _PCIEDEV_IO_H
 
+#include <linux/version.h>
 #include <linux/types.h>
 #include <linux/ioctl.h> /* needed for the _IOW etc stuff used later */
+#include <stddef.h>
 
 #ifndef NUMBER_OF_BARS
 #define NUMBER_OF_BARS 6
@@ -178,11 +180,22 @@ struct device_ioctrl_dma  {
 };
 typedef struct device_ioctrl_dma device_ioctrl_dma;
 
+#ifdef __KERNEL__
+	#if LINUX_VERSION_CODE > KERNEL_VERSION(5,6,1)
+		struct timeval {
+			__kernel_old_time_t	tv_sec;		/* seconds */
+			__kernel_suseconds_t	tv_usec;	/* microseconds */
+		};
+	#endif
+#endif
+
 struct device_ioctrl_time  {
         struct timeval   start_time;
         struct timeval   stop_time;
 };
 typedef struct device_ioctrl_time device_ioctrl_time;
+
+
 
 struct device_i2c_rw  {
        unsigned int           busNum; /* I2C Bus num*/

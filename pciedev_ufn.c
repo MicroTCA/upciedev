@@ -1059,11 +1059,21 @@ EXPORT_SYMBOL(pciedev_get_shapi_module_info);
 EXPORT_SYMBOL(pciedev_procinfo);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-const struct file_operations upciedev_proc_fops = {
-	.open = pciedev_proc_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,6,1)
+	const struct proc_ops upciedev_proc_fops = {
+		.proc_open = pciedev_proc_open,
+		.proc_read = seq_read,
+		.proc_lseek = seq_lseek,
+		.proc_release = single_release,
+	};
+	#else	
+	const struct file_operations upciedev_proc_fops = {
+		.open = pciedev_proc_open,
+		.read = seq_read,
+		.llseek = seq_lseek,
+		.release = single_release,
+	};
+#endif
 EXPORT_SYMBOL(upciedev_proc_fops);
 #endif
