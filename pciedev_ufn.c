@@ -203,8 +203,9 @@ void upciedev_cleanup_module_exp(pciedev_cdev  **pciedev_cdev_p)
 	unregister_chrdev_region(devno, (PCIEDEV_NR_DEVS + 1));
 	class_destroy(pciedev_cdev_m->pciedev_class);
 	for(k = 0; k <= PCIEDEV_NR_DEVS; k++){
-		cdev_del(&pciedev_cdev_m->pciedev_dev_m[k]->cdev);
+        //cdev_del(&pciedev_cdev_m->pciedev_dev_m[k]->cdev); // if pciedev_cdev_m->pciedev_dev_m[k] is null (we check in next line, then we will crash the kernel)
 		if(pciedev_cdev_m->pciedev_dev_m[k]){
+            cdev_del(&pciedev_cdev_m->pciedev_dev_m[k]->cdev); // migrated from before if to here
 			kfree(pciedev_cdev_m->pciedev_dev_m[k]);
 			pciedev_cdev_m->pciedev_dev_m[k] = 0;
 		}
@@ -401,6 +402,11 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	
 	tmp_bar_num = vma->vm_pgoff;
 	tmp_size         = (vma->vm_end - vma->vm_start);
+
+    // we shall check the bar num, and if it is not in correct range, then return error
+    if((tmp_bar_num<0)||(tmp_bar_num>=NUMBER_OF_BARS)){
+        return -ENOENT;
+    }
 	
 	if(!(dev->mem_base[tmp_bar_num])){
 		//printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
