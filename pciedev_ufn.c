@@ -29,6 +29,7 @@
 
 
 #include "pciedev_ufn.h"
+#include "debug_functions.h"
 
 /*
 struct upciedev_base_dev base_upciedev_dev;
@@ -398,7 +399,17 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	unsigned long tmp_physical;
 	unsigned long tmp_psize = 0;
 	
-    struct pciedev_dev       *dev  = ((struct file_data*)(filp)->private_data)->pciedev_p;
+    //struct pciedev_dev       *dev  = ((struct file_data*)(filp)->private_data)->pciedev_p;
+	struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
+
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+	
+	if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
+		ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
+		return -ENODEV;
+	}
 	
 	//printk(KERN_INFO "PCIEDEV_MMAP:  start %X ; STOP %X; PGOFFSET %X \n",
          //      vma->vm_start, vma->vm_end, vma->vm_pgoff);
@@ -408,10 +419,12 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 
     // we shall check the bar num, and if it is not in correct range, then return error
     if((tmp_bar_num<0)||(tmp_bar_num>=NUMBER_OF_BARS)){
+		LeaveCritRegion(&dev->dev_mut);
         return -ENOENT;
     }
 	
 	if(!(dev->mem_base[tmp_bar_num])){
+		LeaveCritRegion(&dev->dev_mut);
 		//printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
 		return -ENOMEM;
 	}
@@ -419,6 +432,7 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	
 	if(tmp_psize > PAGE_SIZE){
 		if(tmp_psize < tmp_size){
+			LeaveCritRegion(&dev->dev_mut);
 	/*
 			printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
 					(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
@@ -430,11 +444,14 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	tmp_off         = vma->vm_pgoff << PAGE_SHIFT;
 	tmp_physical = dev->mem_base[tmp_bar_num] >> PAGE_SHIFT;
 			
-	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot))
+	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot)){
+		LeaveCritRegion(&dev->dev_mut);
 		return -EAGAIN;
+	}
 
 	vma->vm_ops = &upciedev_remap_vm_ops;
 	upciedev_vma_open(vma);
+	LeaveCritRegion(&dev->dev_mut);
 	return 0;
 }
 EXPORT_SYMBOL(pciedev_remap_mmap_exp);
