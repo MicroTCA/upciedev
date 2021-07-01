@@ -41,3 +41,25 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+Upciedev.symvers
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# object files
+*.[oa]
+*~
+*.ko
+*.obj
+*.elf
+
+# Prerequisites
+*.d
+
