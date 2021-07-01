@@ -66,7 +66,18 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 	const size_t unSizeOfRW = sizeof(device_ioc_rw);
 	
 	device_ioctrl_data  data;
-	struct pciedev_dev       *dev  = filp->private_data;
+    //struct pciedev_dev       *dev  = filp->private_data;
+    struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
+
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+
+    if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
+        ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
+        (void)base_upciedev_dev;
+        return -ENODEV;
+    }
 
 	cmd              = *cmd_p;
 	arg                = *arg_p;
@@ -75,12 +86,6 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 	d_num         = dev->dev_num;	
 	cur_proc     = current->group_leader->pid;
 	pdev            = (dev->pciedev_pci_dev);
-
-	if(!dev->dev_sts){
-		printk("PCIEDEV_IOCTRL: NO DEVICE  DEV_NUM %d SLOT NUM %d\n", dev->dev_num, dev->slot_num);
-		retval = -EFAULT;
-		return retval;
-	}
 	
 	DEBUGNEW("\n");
         
@@ -120,7 +125,6 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
    
 	switch (cmd) {
 		case PCIEDEV_PHYSICAL_SLOT:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			retval = 0;
 			if (copy_from_user(&data, (device_ioctrl_data*)arg, (size_t)io_size)) {
 				retval = -EFAULT;
@@ -141,9 +145,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return 0;
 		case PCIEDEV_DRIVER_VERSION:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			data.data   =  pciedev_cdev_m->PCIEDEV_DRV_VER_MAJ;
 			data.offset =  pciedev_cdev_m->PCIEDEV_DRV_VER_MIN;
 			if (copy_to_user((device_ioctrl_data*)arg, &data, (size_t)io_size)) {
@@ -153,9 +156,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return 0;
 		case PCIEDEV_UDRIVER_VERSION:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			data.data   =  pciedev_cdev_m->UPCIEDEV_VER_MAJ;
 			data.offset =  pciedev_cdev_m->UPCIEDEV_VER_MIN;
 			if (copy_to_user((device_ioctrl_data*)arg, &data, (size_t)io_size)) {
@@ -165,9 +167,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return 0;
 		case PCIEDEV_FIRMWARE_VERSION:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			data.data = dev->brd_info_list.PCIEDEV_BOARD_VERSION;
 			if (copy_to_user((device_ioctrl_data*)arg, &data, (size_t)io_size)) {
 				retval = -EFAULT;
@@ -176,9 +177,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return 0;
 		case PCIEDEV_GET_STATUS:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			data.data   = dev->dev_sts;
 			if (copy_to_user((device_ioctrl_data*)arg, &data, (size_t)io_size)) {
 				retval = -EFAULT;
@@ -187,9 +187,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return 0;
 		case PCIEDEV_SCRATCH_REG:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			retval = 0;
 			if (copy_from_user(&data, (device_ioctrl_data*)arg, (size_t)io_size)) {
 				retval = -EFAULT;
@@ -239,9 +238,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 		case PCIEDEV_SET_SWAP:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			if (copy_from_user(&nUserValue, (int*)arg, sizeof(int))) {
 				//mutex_unlock(&dev->dev_mut);
 				LeaveCritRegion(&dev->dev_mut); /// new
@@ -249,21 +247,25 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			}
 			dev->swap = nUserValue ? 1 : 0;
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 
-		case PCIEDEV_GET_SWAP:
-			return dev->swap;
+        case PCIEDEV_GET_SWAP:{
+            int swap = dev->swap;
+            LeaveCritRegion(&dev->dev_mut);
+            return swap;
+        }
 			
 		case PCIEDEV_LOCK_DEVICE:
+            LeaveCritRegion(&dev->dev_mut); // todo: make API to change lock to longlock
 			retval = LongLockOfCriticalRegion(&dev->dev_mut);
-			break;
+            return retval;
 
 		case PCIEDEV_UNLOCK_DEVICE:
+            LeaveCritRegion(&dev->dev_mut); // todo: make sure that this is not necessary
 			retval = UnlockLongCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 
 		case PCIEDEV_SET_BITS:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			if (copy_from_user(&aIocRW, (device_ioc_rw*)arg, sizeof(device_ioc_rw))){
 				LeaveCritRegion(&dev->dev_mut);
 				return -EFAULT;
@@ -273,10 +275,9 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			retval = pciedev_write_inline(dev, aIocRW.register_size, MTCA_SET_BITS, aIocRW.barx_rw, aIocRW.offset_rw,
 								  (const char*)aIocRW.dataPtr, (const char*)aIocRW.maskPtr, aIocRW.count_rw);
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 
 		case PCIEDEV_SWAP_BITS:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			if (copy_from_user(&aIocRW, (device_ioc_rw*)arg, sizeof(device_ioc_rw))){
 				LeaveCritRegion(&dev->dev_mut);
 				return -EFAULT;
@@ -286,7 +287,7 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			retval = pciedev_write_inline(dev, aIocRW.register_size, MTCA_SWAP_BITS,aIocRW.barx_rw, aIocRW.offset_rw,
 																						   NULL, (const char*)aIocRW.maskPtr, aIocRW.count_rw);
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 		
 		case PCIEDEV_LOCKED_READ:
 			if (copy_from_user(&aIocRW, (device_ioc_rw*)arg, unSizeOfRW)){ return -EFAULT; }
@@ -295,15 +296,13 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			retval = pciedev_read_inline(dev, aIocRW.register_size, MTCA_LOCKED_READ,aIocRW.barx_rw, 
 					                                   aIocRW.offset_rw, (char*)aIocRW.dataPtr, aIocRW.count_rw);
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 		
 		case PCIEDEV_VECTOR_RW:
 			if (copy_from_user(&aVectorRW, (device_vector_rw*)arg, sizeof(device_vector_rw))){return -EFAULT;}
 			nMaxNumRW = (int)aVectorRW.number_of_rw;
 			pUserRWdata = (device_ioc_rw* __user)((void*)aVectorRW.device_ioc_rw_ptr);
 			retval = 0;
-
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 
 			for (i = 0; (i < nMaxNumRW) && (!copy_from_user(&aIocRW, pUserRWdata, unSizeOfRW)); ++i, 
 					                                                                       pUserRWdata += 1)
@@ -334,12 +333,14 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 				}
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;	
+            return retval;
 		
-		case PCIEDEV_GET_REGISTER_SIZE:
-			DEBUGNEW("!!!PCIEDEV_GET_REGISTER_SIZE reg_size=%d\n", (int)dev->register_size);
-			return dev->register_size;
-			break;
+        case PCIEDEV_GET_REGISTER_SIZE:{
+            int register_size = dev->register_size;
+            LeaveCritRegion(&dev->dev_mut);
+            DEBUGNEW("!!!PCIEDEV_GET_REGISTER_SIZE reg_size=%d\n", register_size);
+            return register_size;
+        }
 
 		case PCIEDEV_SET_REGISTER_SIZE:
 			if (copy_from_user(&nUserValue, (int*)arg, sizeof(int))) {
@@ -347,9 +348,9 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			}
 			CORRECT_REGISTER_SIZE(nUserValue, RW_D32);
 			dev->register_size = nUserValue;
-			break;
+            LeaveCritRegion(&dev->dev_mut);
+            return retval;
 		case PCIEDEV_SINGLE_IOC_ACCESS:
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			if (copy_from_user(&aIocRW, (device_ioc_rw*)arg, sizeof(device_ioc_rw)))
 			{
 				LeaveCritRegion(&dev->dev_mut);
@@ -370,9 +371,8 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 					aIocRW.offset_rw, (const char*)aIocRW.dataPtr, (const char*)aIocRW.maskPtr, aIocRW.count_rw);
 				LeaveCritRegion(&dev->dev_mut);
 			}
-			break;
+            return retval;
 		case PCIEDEV_GET_SHAPI_DEVINFO: //picmg_shapi_device_info      shapi_dev_info;
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			retval = 0;
 			
 			shapi_dev_info.SHAPI_VERSION = dev->device_info_list.SHAPI_VERSION;
@@ -397,13 +397,12 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			if (copy_to_user((picmg_shapi_device_info*)arg, &shapi_dev_info, (size_t)sizeof(picmg_shapi_device_info))) {
 				retval = -EFAULT;
 				LeaveCritRegion(&dev->dev_mut);
-			return retval;
+                return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 
 		case PCIEDEV_GET_SHAPI_MODINFO: //picmg_shapi_module_info    shapi_module_info;
-			if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 			retval = 0;
 			if (copy_from_user(&shapi_mod_info, (picmg_shapi_module_info*)arg, (size_t)sizeof(picmg_shapi_module_info))) {
 				retval = -EFAULT;
@@ -440,14 +439,14 @@ long     pciedev_ioctl_exp(struct file *filp, unsigned int *cmd_p, unsigned long
 			if (copy_to_user((picmg_shapi_module_info*)arg, &shapi_mod_info, (size_t)sizeof(picmg_shapi_module_info))) {
 				retval = -EFAULT;
 				LeaveCritRegion(&dev->dev_mut);
-			return retval;
+                return retval;
 			}
 			LeaveCritRegion(&dev->dev_mut);
-			break;
+            return retval;
 			
 		default:
+            LeaveCritRegion(&dev->dev_mut);
 			return -ENOTTY;
-			break;
 	}
 	//mutex_unlock(&dev->dev_mut);
 	//LeaveCritRegion(&dev->dev_mut); /// new  // removed to the cases

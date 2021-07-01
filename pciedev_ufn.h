@@ -179,14 +179,7 @@ struct upciedev_phys_address {
 };
 typedef struct upciedev_phys_address upciedev_phys_address;
 
-struct upciedev_file_list {
-    struct list_head node_file_list;
-    struct file *filp;
-    int      file_cnt;
-};
-typedef struct upciedev_file_list upciedev_file_list;
-
-#if defined(WIN32) & !defined(u32)
+#if defined(_WIN32) & !defined(u32)
 #define u32 unsigned
 #endif
 
@@ -272,7 +265,6 @@ struct pciedev_dev {
 	int                        dev_num;       /*  file dev_t = MKDEV(PCIEDEV_MAJOR, (dev_minor))*/
 	int                        dev_sts;
 	int                        dev_file_ref;
-	int                        null_dev;
 	int                        swap;
 	
 	int					irq_type : 3;
@@ -285,9 +277,7 @@ struct pciedev_dev {
 	void*					parent;
 
 	int							register_size : 7;
-    
-	struct upciedev_file_list dev_file_list; 
-    
+
 	int                        slot_num;
 	u16                      vendor_id;
 	u16                      device_id;
@@ -339,6 +329,11 @@ struct pciedev_dev {
 	struct shapi_module_info module_info_list;
 	int                                 shapi_brd;
 	int                                 shapi_module_num;
+
+    // new filelds
+    u64                 hot_plug_events_counter;
+    void (*destructor)(struct pciedev_dev*);
+    u64         device_inited : 1;
 };
 typedef struct pciedev_dev pciedev_dev;
 
@@ -350,12 +345,19 @@ struct pciedev_cdev {
 	int   PCIEDEV_MAJOR ;     /* major by default */
 	int   PCIEDEV_MINOR  ;    /* minor by default */
 
-	pciedev_dev                   *pciedev_dev_m[PCIEDEV_NR_DEVS + 1];
+    //pciedev_dev                   *pciedev_dev_m[PCIEDEV_NR_DEVS + 1];
+    pciedev_dev                   *pciedev_dev_m[PCIEDEV_NR_DEVS];
 	struct class                    *pciedev_class;
 	struct proc_dir_entry     *pciedev_procdir;
 	int                                   pciedevModuleNum;
 };
 typedef struct pciedev_cdev pciedev_cdev;
+
+typedef struct file_data {
+    struct pciedev_dev* pciedev_p;
+    u64                 hot_plug_number_file_openned;
+}file_data;
+
 
 
 void     upciedev_cleanup_module_exp(pciedev_cdev **);
@@ -365,11 +367,17 @@ int       upciedev_init_module_exp(pciedev_cdev **, struct file_operations *, ch
 int       pciedev_probe_exp(struct pci_dev *, const struct pci_device_id *,  struct file_operations *, pciedev_cdev *, char *, int * );
 int       pciedev_remove_exp(struct pci_dev *dev, pciedev_cdev *, char *, int *);
 
+// 2 new functions
+int pciedev_probe_single_device_exp(struct pci_dev* a_dev, pciedev_dev* a_pciedev, const char* a_dev_name,
+                                    struct pciedev_cdev* a_pciedev_cdev_p, const struct file_operations* a_pciedev_fops,
+                                    int a_tmp_parent_num);
+int pciedev_remove_single_device_exp(struct pci_dev* a_dev, const pciedev_cdev* a_pciedev_cdev_m, const char* a_dev_name, int* brd_num_p);
+
 int        pciedev_open_exp( struct inode *, struct file * );
 int        pciedev_release_exp(struct inode *, struct file *);
 ssize_t  pciedev_read_exp(struct file *, char __user *, size_t , loff_t *);
 ssize_t  pciedev_write_exp(struct file *, const char __user *, size_t , loff_t *);
-loff_t    pciedev_llseek(struct file *, loff_t, int);
+loff_t    pciedev_llseek_exp(struct file *, loff_t, int);
 long     pciedev_ioctl_exp(struct file *, unsigned int* , unsigned long* , pciedev_cdev *);
 int        pciedev_set_drvdata(struct pciedev_dev *, void *);
 void*    pciedev_get_drvdata(struct pciedev_dev *);
@@ -418,8 +426,8 @@ int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *, struc
 int pciedev_setup_interrupt(irqreturn_t (*pciedev_interrupt)(int , void *), struct pciedev_dev *, char *, int);
 #endif
 
-void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev);
-void unregister_upciedev_proc(int num, char *dfn);
+void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev);
+void unregister_upciedev_proc(int num, const char *dfn);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 	int        pciedev_procinfo(char *, char **, off_t, int, int *,void *);
