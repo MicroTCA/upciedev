@@ -40,7 +40,7 @@
 #include <linux/fs.h>	
 #include <linux/proc_fs.h>
 
-#include "pciedev_ufn.h"
+//#include "pciedev_ufn.h"
 #include "pciedev_io.h"
 #include "criticalregionlock.h"
 

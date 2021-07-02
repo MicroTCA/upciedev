@@ -29,6 +29,7 @@
 
 
 #include "pciedev_ufn.h"
+#include "debug_functions.h"
 
 /*
 struct upciedev_base_dev base_upciedev_dev;
@@ -62,7 +63,7 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 		return -ENOMEM;
 	}
 
-	pciedev_fops->llseek = pciedev_llseek;
+    pciedev_fops->llseek = pciedev_llseek_exp;
 
 	*pciedev_cdev_pp = pciedev_cdev_p;
 	pciedev_cdev_p->PCIEDEV_MAJOR             = 47;
@@ -73,7 +74,7 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	pciedev_cdev_p->UPCIEDEV_VER_MAJ        = 1;
 	pciedev_cdev_p->UPCIEDEV_VER_MIN        = 1;
 
-	result = alloc_chrdev_region(&devt, pciedev_cdev_p->PCIEDEV_MINOR, (PCIEDEV_NR_DEVS + 1), dev_name);
+    result = alloc_chrdev_region(&devt, pciedev_cdev_p->PCIEDEV_MINOR, (PCIEDEV_NR_DEVS), dev_name);
 	pciedev_cdev_p->PCIEDEV_MAJOR = MAJOR(devt);
 	/* Populate sysfs entries */
 	pciedev_cdev_p->pciedev_class = class_create(pciedev_fops->owner, dev_name);
@@ -104,7 +105,7 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	}
 	*/
     
-	for(i = 0; i <= PCIEDEV_NR_DEVS;i++){
+    for(i = 0; i < PCIEDEV_NR_DEVS;++i){
         
 		pciedev_cdev_p->pciedev_dev_m[i] = kzalloc(sizeof(pciedev_dev), GFP_KERNEL);
 		if(!pciedev_cdev_p->pciedev_dev_m[i]){
@@ -134,7 +135,6 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	}
 	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->prj_info_list.prj_list));
 	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->module_info_list.module_list));
-	INIT_LIST_HEAD(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.node_file_list));
 	//mutex_init(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut));
 	InitCritRegionLock(&(pciedev_cdev_p->pciedev_dev_m[i]->dev_mut), _DEFAULT_TIMEOUT_);
 	pciedev_cdev_p->pciedev_dev_m[i]->dev_sts                   = 0;
@@ -145,18 +145,15 @@ int upciedev_init_module_exp(pciedev_cdev **pciedev_cdev_pp, struct file_operati
 	pciedev_cdev_p->pciedev_dev_m[i]->pciedev_all_mems  = 0;
 	pciedev_cdev_p->pciedev_dev_m[i]->brd_num                = i;
 	pciedev_cdev_p->pciedev_dev_m[i]->binded                   = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->dev_file_list.file_cnt = 0;
-	pciedev_cdev_p->pciedev_dev_m[i]->null_dev                   = 0;
 	printk(KERN_ALERT "INIT ADD PARENT BASE\n");
 	pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = &base_upciedev_dev;
 	//pciedev_cdev_p->pciedev_dev_m[i]->parent_base_dev     = p_base_upciedev_dev;
 	
 	
 
-	if(i == PCIEDEV_NR_DEVS){
-		pciedev_cdev_p->pciedev_dev_m[i]->binded        = 1;
-		pciedev_cdev_p->pciedev_dev_m[i]->null_dev      = 1;
-	}
+    //if(i == PCIEDEV_NR_DEVS){
+    //	pciedev_cdev_p->pciedev_dev_m[i]->binded        = 1;
+    //}
     }
 	
 /*
@@ -200,9 +197,9 @@ void upciedev_cleanup_module_exp(pciedev_cdev  **pciedev_cdev_p)
 	pciedev_cdev_m = *pciedev_cdev_p;
 
 	devno = MKDEV(pciedev_cdev_m->PCIEDEV_MAJOR, pciedev_cdev_m->PCIEDEV_MINOR);
-	unregister_chrdev_region(devno, (PCIEDEV_NR_DEVS + 1));
+    unregister_chrdev_region(devno, (PCIEDEV_NR_DEVS));
 	class_destroy(pciedev_cdev_m->pciedev_class);
-	for(k = 0; k <= PCIEDEV_NR_DEVS; k++){
+    for(k = 0; k < PCIEDEV_NR_DEVS; ++k){
         //cdev_del(&pciedev_cdev_m->pciedev_dev_m[k]->cdev); // if pciedev_cdev_m->pciedev_dev_m[k] is null (we check in next line, then we will crash the kernel)
 		if(pciedev_cdev_m->pciedev_dev_m[k]){
             cdev_del(&pciedev_cdev_m->pciedev_dev_m[k]->cdev); // migrated from before if to here
@@ -219,27 +216,31 @@ EXPORT_SYMBOL(upciedev_cleanup_module_exp);
 
 int    pciedev_open_exp( struct inode *inode, struct file *filp )
 {
-	int    minor;
 	struct pciedev_dev *dev;
-	upciedev_file_list *tmp_file_list;
+    struct file_data* file_data_p;
 
-	minor = iminor(inode);
 	dev = container_of(inode->i_cdev, struct pciedev_dev, cdev);
-	dev->dev_minor     = minor;
 
 	//printk(KERN_ALERT "$$$$$$$$$$$$$OPEN BOARD 0 \n");
 	if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
          //printk(KERN_ALERT "$$$$$$$$$$$$$OPEN BOARD 1\n");
-	
-	dev->dev_file_ref ++;
-	filp->private_data  = dev; 
-	filp->f_pos  = PCIED_FPOS; 
 
-	tmp_file_list = kzalloc(sizeof(upciedev_file_list), GFP_KERNEL);
-	INIT_LIST_HEAD(&tmp_file_list->node_file_list); 
-	tmp_file_list->file_cnt = dev->dev_file_ref;
-	tmp_file_list->filp = filp;
-	list_add(&(tmp_file_list->node_file_list), &(dev->dev_file_list.node_file_list));
+    if(!dev->dev_sts){ // this will never happen, so probably this if will be deleted
+        LeaveCritRegion(&dev->dev_mut);
+        return -ENODEV;
+    }
+
+    file_data_p = kzalloc(sizeof(struct file_data),GFP_KERNEL);
+    if(!file_data_p){
+        LeaveCritRegion(&dev->dev_mut);
+        return -ENOMEM;
+    }
+
+    filp->private_data  = file_data_p;
+	file_data_p->pciedev_p = dev;
+    file_data_p->hot_plug_number_file_openned = dev->hot_plug_events_counter;
+	filp->f_pos  = PCIED_FPOS; 
+    ++(dev->dev_file_ref);
          
 	//printk(KERN_ALERT "$$$$$$$$$$$$$OPEN BOARD 2\n");
 	//mutex_unlock(&dev->dev_mut);
@@ -249,28 +250,32 @@ int    pciedev_open_exp( struct inode *inode, struct file *filp )
 }
 EXPORT_SYMBOL(pciedev_open_exp);
 
-int    pciedev_release_exp(struct inode *inode, struct file *filp)
+
+int pciedev_release_exp(struct inode *inode, struct file *filp)
 {
-    struct pciedev_dev *dev;
-    u16 cur_proc     = 0;
-    upciedev_file_list *tmp_file_list;
-    struct list_head *pos, *q;
+    struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
     
-    dev = filp->private_data;
+    (void)inode;
     //printk(KERN_ALERT "$$$$$$$$$$$$$RELEASE BOARD 0 \n");
     //mutex_lock(&dev->dev_mut);
     if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
     //printk(KERN_ALERT "$$$$$$$$$$$$$RELEASE BOARD 1 \n");
+
+    kfree(file_data_p);
+
+    --(dev->dev_file_ref);
+
+    if(!(dev->dev_sts)){
+        // let's check if no user remains in order to delete dev
+        if(!(dev->dev_file_ref)){
+            // todo: destroy structure
+            LeaveCritRegion(&dev->dev_mut);
+            if(dev->destructor){(dev->destructor)(dev);}
+            return 0;
+        }
+    }
 	
-    dev->dev_file_ref --;
-    cur_proc = current->group_leader->pid;
-    list_for_each_safe(pos, q, &(dev->dev_file_list.node_file_list)){
-             tmp_file_list = list_entry(pos, upciedev_file_list, node_file_list);
-             if(tmp_file_list->filp ==filp){
-                 list_del(pos);
-                 kfree (tmp_file_list);
-             }
-    } 
     //printk(KERN_ALERT "$$$$$$$$$$$$$RELEASE BOARD 2 \n");
     //mutex_unlock(&dev->dev_mut);
     LeaveCritRegion(&dev->dev_mut);
@@ -395,7 +400,17 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	unsigned long tmp_physical;
 	unsigned long tmp_psize = 0;
 	
-	struct pciedev_dev       *dev  = filp->private_data;
+    //struct pciedev_dev       *dev  = ((struct file_data*)(filp)->private_data)->pciedev_p;
+	struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
+
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+	
+	if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
+		ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
+		return -ENODEV;
+	}
 	
 	//printk(KERN_INFO "PCIEDEV_MMAP:  start %X ; STOP %X; PGOFFSET %X \n",
          //      vma->vm_start, vma->vm_end, vma->vm_pgoff);
@@ -405,10 +420,12 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 
     // we shall check the bar num, and if it is not in correct range, then return error
     if((tmp_bar_num<0)||(tmp_bar_num>=NUMBER_OF_BARS)){
+		LeaveCritRegion(&dev->dev_mut);
         return -ENOENT;
     }
 	
 	if(!(dev->mem_base[tmp_bar_num])){
+		LeaveCritRegion(&dev->dev_mut);
 		//printk(KERN_INFO "PCIEDEV_MMAP:  NO MEM FOR BAR  %i \n",tmp_bar_num);
 		return -ENOMEM;
 	}
@@ -416,6 +433,7 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	
 	if(tmp_psize > PAGE_SIZE){
 		if(tmp_psize < tmp_size){
+			LeaveCritRegion(&dev->dev_mut);
 	/*
 			printk(KERN_INFO "PCIEDEV_MMAP:  NO ENOUGH MEM  BAR_SIZE  %i  MMAP SIZE\n",
 					(dev->mem_base_end[tmp_bar_num] -  dev->mem_base[tmp_bar_num]), tmp_size);
@@ -427,11 +445,14 @@ int pciedev_remap_mmap_exp(struct file *filp, struct vm_area_struct *vma)
 	tmp_off         = vma->vm_pgoff << PAGE_SHIFT;
 	tmp_physical = dev->mem_base[tmp_bar_num] >> PAGE_SHIFT;
 			
-	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot))
+	if (remap_pfn_range(vma,  vma->vm_start , tmp_physical, tmp_size,  vma->vm_page_prot)){
+		LeaveCritRegion(&dev->dev_mut);
 		return -EAGAIN;
+	}
 
 	vma->vm_ops = &upciedev_remap_vm_ops;
 	upciedev_vma_open(vma);
+	LeaveCritRegion(&dev->dev_mut);
 	return 0;
 }
 EXPORT_SYMBOL(pciedev_remap_mmap_exp);
@@ -870,23 +891,30 @@ int       pciedev_get_shapi_module_info(struct pciedev_dev  *bdev)
 }
 EXPORT_SYMBOL(pciedev_get_shapi_module_info);
 
+void unregister_upciedev_proc(int num, const char *dfn)
+{
+    char prc_entr[32];
+    snprintf(prc_entr, 32, "%ss%i", dfn, num);
+    remove_proc_entry(prc_entr,0);
+}
+
+
+void register_upciedev_proc(int num, const char * dfn, struct pciedev_dev     *p_upcie_dev)
+{
+    char prc_entr[32];
+    snprintf(prc_entr, 32, "%ss%i", dfn, num);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
+    create_proc_entry(prc_entr, S_IFREG | S_IRUGO, 0);
+    // below 2 lines are inside the driver initialization code
+    //p_upcie_cdev->pciedev_procdir->read_proc = pciedev_procinfo;
+    //p_upcie_cdev->pciedev_procdir->data = p_upcie_dev;
+#else
+    proc_create_data(prc_entr, S_IFREG | S_IRUGO, 0, &upciedev_proc_fops, p_upcie_dev);
+#endif
+}
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
-    void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
-    {
-        char prc_entr[32];
-        sprintf(prc_entr, "%ss%i", dfn, num);
-        p_upcie_cdev->pciedev_procdir = create_proc_entry(prc_entr, S_IFREG | S_IRUGO, 0);
-        p_upcie_cdev->pciedev_procdir->read_proc = pciedev_procinfo;
-        p_upcie_cdev->pciedev_procdir->data = p_upcie_dev;
-    }
-
-    void unregister_upciedev_proc(int num, char *dfn)
-    {
-        char prc_entr[32];
-        sprintf(prc_entr, "%ss%i", dfn, num);
-        remove_proc_entry(prc_entr,0);
-    }
 
     int pciedev_procinfo(char *buf, char **start, off_t fpos, int lenght, int *eof, void *data)
     {
@@ -926,19 +954,6 @@ EXPORT_SYMBOL(pciedev_get_shapi_module_info);
         return p - buf;
     }
 #else
-    void register_upciedev_proc(int num, char * dfn, struct pciedev_dev     *p_upcie_dev, struct pciedev_cdev     *p_upcie_cdev)
-    {
-        char prc_entr[32];
-        sprintf(prc_entr, "%ss%i", dfn, num);
-        p_upcie_cdev->pciedev_procdir = proc_create_data(prc_entr, S_IFREG | S_IRUGO, 0, &upciedev_proc_fops, p_upcie_dev); 
-    }
-
-    void unregister_upciedev_proc(int num, char *dfn)
-    {
-        char prc_entr[32];
-        sprintf(prc_entr, "%ss%i", dfn, num);
-        remove_proc_entry(prc_entr,0);
-    }
 
      int pciedev_proc_open(struct inode *inode, struct file *file)
     {

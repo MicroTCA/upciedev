@@ -39,14 +39,17 @@
 ssize_t pciedev_read_exp(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	ssize_t    retval         = 0;
-	struct pciedev_dev *dev = filp->private_data;
+    //struct pciedev_dev *dev = filp->private_data;
+    struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
 
-	if (!dev->dev_sts){
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+
+    if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
 		ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
 		return -ENODEV;
 	}
-	
-	if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; } /// new
 
 	/*Check if it is pread call*/
 	if (*f_pos != PCIED_FPOS)
@@ -81,17 +84,22 @@ ssize_t pciedev_read_exp(struct file *filp, char __user *buf, size_t count, loff
 }
 EXPORT_SYMBOL(pciedev_read_exp);
 
-ssize_t pciedev_write_exp(struct file *a_filp, const char __user *a_buf, size_t count, loff_t *a_f_pos)
+ssize_t pciedev_write_exp(struct file *filp, const char __user *a_buf, size_t count, loff_t *a_f_pos)
 {
 	ssize_t				retval	= 0;
-	struct pciedev_dev*	dev		= a_filp->private_data;
+    //struct pciedev_dev*	dev		= a_filp->private_data;
+    struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
 
-	if (!dev->dev_sts){
-		ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
-		return -EFAULT;
-	}
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
 
-	if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; } /// new
+    if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
+        ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
+        (void)base_upciedev_dev;
+        return -ENODEV;
+    }
+
 
 	/*Check if it is pwrite call*/
 	if (*a_f_pos != PCIED_FPOS)
@@ -126,20 +134,22 @@ ssize_t pciedev_write_exp(struct file *a_filp, const char __user *a_buf, size_t 
 }
 EXPORT_SYMBOL(pciedev_write_exp);
 
-loff_t    pciedev_llseek(struct file *filp, loff_t off, int frm)
+loff_t    pciedev_llseek_exp(struct file *filp, loff_t off, int frm)
 {
-    ssize_t       retval         = 0;
-    int             minor          = 0;
-    int             d_num          = 0;
-    
-    struct pciedev_dev       *dev = filp->private_data;
-    minor = dev->dev_minor;
-    d_num = dev->dev_num;
-        
-    filp->f_pos = (loff_t)PCIED_FPOS;
-    if(!dev->dev_sts){
-        retval = -EFAULT;
-        return retval;
+    struct file_data* file_data_p = filp->private_data;
+    struct pciedev_dev *dev = file_data_p->pciedev_p;
+
+    if (EnterCritRegion(&dev->dev_mut)){ return -ERESTARTSYS; }
+
+    if (dev->hot_plug_events_counter != file_data_p->hot_plug_number_file_openned){
+        LeaveCritRegion(&dev->dev_mut);
+        ERRCT("ERROR: NO DEVICE %d\n", dev->dev_num);
+        return -ENODEV;
     }
+
+
+    filp->f_pos = (loff_t)PCIED_FPOS;
+    LeaveCritRegion(&dev->dev_mut);
     return (loff_t)PCIED_FPOS;
 }
+EXPORT_SYMBOL(pciedev_llseek_exp);
