@@ -237,7 +237,7 @@ int    pciedev_open_exp( struct inode *inode, struct file *filp )
     }
 
     filp->private_data  = file_data_p;
-	filp->pciedev_p = dev;
+	file_data_p->pciedev_p = dev;
     file_data_p->hot_plug_number_file_openned = dev->hot_plug_events_counter;
 	filp->f_pos  = PCIED_FPOS; 
     ++(dev->dev_file_ref);
