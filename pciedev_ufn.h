@@ -358,6 +358,8 @@ typedef struct file_data {
     u64                 hot_plug_number_file_openned;
 }file_data;
 
+#define FILE_TO_DEV(_file)	( ((struct file_data*)(_file)->private_data)->pciedev_p )
+
 
 
 void     upciedev_cleanup_module_exp(pciedev_cdev **);
