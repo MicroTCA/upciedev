@@ -296,7 +296,7 @@ int    pciedev_probe_exp(struct pci_dev *dev, const struct pci_device_id *id,
     /*******PREPARE INTERRUPTS******/
     
     pciedev_cdev_p->pciedev_dev_m[m_brdNum]->irq_flag = IRQF_SHARED ;
-    #ifdef CONFIG_PCI_MSI
+    #if defined(CONFIG_PCI_MSI) && ( LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0) )
    tmp_msi_num = pci_msi_vec_count(dev);
    printk(KERN_ALERT "MSI COUNT %i\n", tmp_msi_num);
    
